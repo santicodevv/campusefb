@@ -16,11 +16,7 @@ export function AuthLayout() {
 
         <div className="space-y-6 flex flex-col items-center relative top-[-45px]">
           <div className="mb-10">
-            <img
-              src="https://imgur.com/BfhxWQH.png"
-              alt="Logo"
-              className="w-[150px]"
-            />
+            <img src="/logo_login.png" alt="Logo" className="w-[150px]" />
           </div>
 
           <div>
