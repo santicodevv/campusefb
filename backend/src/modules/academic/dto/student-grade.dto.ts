@@ -3,7 +3,7 @@ import { IsNumber, IsString, IsOptional, Min, Max } from 'class-validator';
 export class UpdateStudentGradeDto {
   @IsNumber()
   @Min(0)
-  @Max(10)
+  @Max(100)
   @IsOptional()
   totalGrade?: number;
 
@@ -32,7 +32,7 @@ export class CreateStudentGradeDto {
 
   @IsNumber()
   @Min(0)
-  @Max(10)
+  @Max(100)
   @IsOptional()
   totalGrade?: number;
 

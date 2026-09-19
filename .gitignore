@@ -49,3 +49,10 @@ docker-compose.override.yml
 # Temporary files
 tmp/
 temp/
+
+# Archivos de importación de notas
+notas.sql
+notas.csv
+reporte_notas_no_importadas.json
+reporte_notas_no_importadas.csv
+resumen_notas_no_importadas.txt

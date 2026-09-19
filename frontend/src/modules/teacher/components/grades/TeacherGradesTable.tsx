@@ -33,7 +33,7 @@ export function TeacherGradesTable({ studentGrades, localEdits, handleGradeChang
                     <div className="flex flex-col items-center">
                       <CheckCircle className="h-4 w-4 mb-1" />
                       <span>Nota Final</span>
-                      <span className="text-gray-400 font-normal">(0-10)</span>
+                      <span className="text-gray-400 font-normal">(0-100)</span>
                     </div>
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
@@ -67,21 +67,21 @@ export function TeacherGradesTable({ studentGrades, localEdits, handleGradeChang
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className={`font-medium text-lg ${getGradeColor(student.moodleSumGrade !== null ? Math.round(student.moodleSumGrade * 10) : null)}`}>
+                        <span className={`font-medium text-lg ${getGradeColor(student.moodleSumGrade !== null ? Math.round(student.moodleSumGrade) : null)}`}>
                           {student.moodleSumGrade !== null ? student.moodleSumGrade.toFixed(1) : '-'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
                         {isLocked ? (
-                          <span className={`font-bold text-lg ${getGradeColor(student.totalGrade !== null ? Math.round(student.totalGrade * 10) : null)}`}>{student.totalGrade}</span>
+                          <span className={`font-bold text-lg ${getGradeColor(student.totalGrade !== null ? Math.round(student.totalGrade) : null)}`}>{student.totalGrade}</span>
                         ) : (
                           <Input
                             type="number"
                             value={displayTotal ?? ''}
                             onChange={(e) => handleGradeChange(student.studentId, 'totalGrade', e.target.value)}
                             min={0}
-                            max={10}
-                            step={0.1}
+                            max={100}
+                            step={1}
                             className="w-24 text-center mx-auto"
                             placeholder="-"
                           />

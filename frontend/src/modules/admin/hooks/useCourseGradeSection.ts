@@ -65,8 +65,8 @@ export function useCourseGradeSection(
 
     if (field === 'totalGrade' && value !== null) {
       const numVal = Number(value);
-      if (numVal < 0 || numVal > 10) {
-        toast.error('Solo se permite calificaciones del 0 - 10');
+      if (numVal < 0 || numVal > 100) {
+        toast.error('Solo se permite calificaciones del 0 - 100');
         return;
       }
     }
@@ -102,11 +102,11 @@ export function useCourseGradeSection(
 
   const getGradeColor = (grade: number | null) => {
     if (grade === null) return 'text-gray-400';
-    if (grade < 5) return 'text-[#F89090] font-bold';
-    if (grade < 7) return 'text-[#FEC04B] font-bold';
-    if (grade < 8) return 'text-[#FEE54B] font-bold';
-    if (grade < 9) return 'text-[#C9E04A] font-bold';
-    if (grade <= 10) return 'text-[#1AC866] font-bold';
+    if (grade < 60) return 'text-[#F89090] font-bold';
+    if (grade < 70) return 'text-[#FEC04B] font-bold';
+    if (grade < 80) return 'text-[#FEE54B] font-bold';
+    if (grade < 90) return 'text-[#C9E04A] font-bold';
+    if (grade <= 100) return 'text-[#1AC866] font-bold';
     return 'text-gray-600';
   };
 

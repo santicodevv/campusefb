@@ -96,14 +96,14 @@ export function useGradesSummary() {
     setShowDropdown(false);
   };
 
-  const getGradeColor = (grade: number | null, max: number | null = 10) => {
+  const getGradeColor = (grade: number | null, max: number | null = 100) => {
     if (grade === null) return 'text-gray-400';
-    if (max === 10) {
-      if (grade < 5) return 'text-[#F89090] font-semibold';
-      if (grade < 7) return 'text-[#FEC04B] font-semibold';
-      if (grade < 8) return 'text-[#FEE54B] font-semibold';
-      if (grade < 9) return 'text-[#C9E04A] font-semibold';
-      if (grade <= 10) return 'text-[#1AC866] font-semibold';
+    if (max === 100) {
+      if (grade < 60) return 'text-[#F89090] font-semibold';
+      if (grade < 70) return 'text-[#FEC04B] font-semibold';
+      if (grade < 80) return 'text-[#FEE54B] font-semibold';
+      if (grade < 90) return 'text-[#C9E04A] font-semibold';
+      if (grade <= 100) return 'text-[#1AC866] font-semibold';
       return 'text-gray-600 font-semibold';
     }
     const percentage = max && max > 0 ? (grade / max) * 100 : grade;

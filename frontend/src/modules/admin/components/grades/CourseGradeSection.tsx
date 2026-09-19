@@ -123,7 +123,7 @@ export function CourseGradeSection({
                             <Input
                               type="number"
                               min={0}
-                              max={10}
+                              max={100}
                               value={displayTotal ?? ''}
                               onChange={(e) =>
                                 handleGradeChange(

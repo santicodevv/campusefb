@@ -58,8 +58,8 @@ export function useTeacherGrades() {
       if (field === 'totalGrade') {
         const numValue = value === '' ? null : parseFloat(value);
         if (numValue !== null) {
-          if (isNaN(numValue) || numValue < 0 || numValue > 10) {
-            toast.error('Solo se permite calificaciones del 0 - 10');
+          if (isNaN(numValue) || numValue < 0 || numValue > 100) {
+            toast.error('Solo se permite calificaciones del 0 - 100');
             return prev;
           }
         }
