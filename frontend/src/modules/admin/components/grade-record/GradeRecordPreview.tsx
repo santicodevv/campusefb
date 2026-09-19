@@ -52,7 +52,7 @@ export function GradeRecordPreview({
             {/* Header with Logo */}
             <div className="header text-center mb-6" style={{ textAlign: 'center', marginBottom: '20px' }}>
               <img
-                src="https://i.imgur.com/BfhxWQH.png"
+                src="/logo_login.png"
                 alt="EFB - Escuela de Formación Bíblica"
                 style={{ maxWidth: '280px', height: 'auto', margin: '0 auto 10px' }}
               />
@@ -181,7 +181,7 @@ export function GradeRecordPreview({
               <div className="footer-left flex items-center gap-4" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                 <div className="footer-seal">
                   <img
-                    src="https://i.imgur.com/BfhxWQH.png"
+                    src="/logo_login.png"
                     alt="Sello EFB"
                     style={{ width: '80px', height: '80px', opacity: 0.8, borderRadius: '50%' }}
                   />
