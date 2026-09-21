@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { GraduationCap, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface SidebarLogoProps {
   defaultRoute: string;
@@ -14,9 +14,11 @@ export function SidebarLogo({ defaultRoute, onClose }: SidebarLogoProps) {
         onClick={onClose}
         className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
       >
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 shadow-md shadow-blue-200">
-          <GraduationCap className="h-4.5 w-4.5 text-white" />
-        </div>
+        <img
+          src="/logo_login.png"
+          alt="EFB Logo"
+          className="h-8 w-8 rounded-lg object-contain"
+        />
         <span className="text-[15px] font-bold text-gray-900 tracking-tight">
           EFB
         </span>
