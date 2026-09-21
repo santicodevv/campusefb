@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { FileText, Download, Trash2, Eye, Upload, CheckCircle } from 'lucide-react';
 import { Button, Spinner } from '@/shared/components/ui';
-import { DocumentType, DOCUMENT_TYPE_LABELS, UserDocument } from '@/shared/types/document.types';
+import { DocumentType, DOCUMENT_TYPE_LABELS } from '@/shared/types/document.types';
+import type { UserDocument } from '@/shared/types/document.types';
 import { uploadsApi } from '@/shared/api/uploads.api';
 import toast from 'react-hot-toast';
 

@@ -3,7 +3,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, Spinner } fr
 import { FileText } from 'lucide-react';
 import { DocumentRow } from './DocumentRow';
 import { uploadsApi } from '@/shared/api/uploads.api';
-import { DocumentType, UserDocument } from '@/shared/types/document.types';
+import { DocumentType } from '@/shared/types/document.types';
+import type { UserDocument } from '@/shared/types/document.types';
 
 interface DocumentsSectionProps {
   userId?: number;

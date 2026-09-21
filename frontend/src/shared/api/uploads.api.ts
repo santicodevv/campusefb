@@ -1,5 +1,6 @@
 import { api } from '@/shared/lib/axios';
-import type { UserDocument, DocumentType } from '@/shared/types/document.types';
+import type { UserDocument } from '@/shared/types/document.types';
+import type { DocumentType } from '@/shared/types/document.types';
 
 interface UploadProfilePhotoResponse {
   message: string;

@@ -1,8 +1,10 @@
-export enum DocumentType {
-  CEDULA = 'CEDULA',
-  CERTIFICADO_BACHILLER = 'CERTIFICADO_BACHILLER',
-  CARTA_PASTOR = 'CARTA_PASTOR',
-}
+export const DocumentType = {
+  CEDULA: 'CEDULA',
+  CERTIFICADO_BACHILLER: 'CERTIFICADO_BACHILLER',
+  CARTA_PASTOR: 'CARTA_PASTOR',
+} as const;
+
+export type DocumentType = (typeof DocumentType)[keyof typeof DocumentType];
 
 export interface UserDocument {
   id: number;
