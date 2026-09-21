@@ -10,3 +10,4 @@ export * from '@/modules/student/types/reenrolment.types';
 export * from '@/modules/student/types/transcript.types';
 export * from '@/modules/admin/types/payment.types';
 export * from '@/modules/admin/types/projection.types';
+export * from './document.types';

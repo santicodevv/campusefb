@@ -11,8 +11,10 @@ import {
   Button,
   Badge,
 } from '@/shared/components/ui';
-import { User, Mail, Shield, LogOut, ArrowLeft, Pencil } from 'lucide-react';
+import { Mail, Shield, LogOut, ArrowLeft, Pencil, Church, Briefcase } from 'lucide-react';
 import { EditProfileModal } from '@/shared/components/profile/EditProfileModal';
+import { ProfilePhotoUpload } from '@/shared/components/profile/ProfilePhotoUpload';
+import { DocumentsSection } from '@/shared/components/profile/DocumentsSection';
 import { getRoleLabel } from '@/shared/lib/utils';
 
 export default function ProfilePage() {
@@ -39,8 +41,10 @@ export default function ProfilePage() {
     }
   };
 
+  const isStudent = roles.includes('STUDENT') && !roles.includes('ADMIN') && !roles.includes('TEACHER');
+
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto space-y-6">
       <div className="mb-6">
         <Button
           variant="outline"
@@ -62,11 +66,9 @@ export default function ProfilePage() {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 text-blue-600">
-              <User className="h-8 w-8" />
-            </div>
-            <div>
+          <div className="flex items-start gap-6">
+            <ProfilePhotoUpload currentPhotoUrl={user?.profilePhotoUrl} />
+            <div className="flex-1">
               <h2 className="text-xl font-semibold text-gray-900">
                 {user?.displayName}
               </h2>
@@ -103,15 +105,25 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {user?.moodleUserId && (
-              <div className="flex items-center gap-3">
-                <User className="h-5 w-5 text-gray-400" />
-                <div>
-                  <p className="text-sm text-gray-500">ID de Moodle</p>
-                  <p className="font-medium text-gray-900">{user.moodleUserId}</p>
-                </div>
+            <div className="flex items-center gap-3">
+              <Church className="h-5 w-5 text-gray-400" />
+              <div>
+                <p className="text-sm text-gray-500">Iglesia</p>
+                <p className="font-medium text-gray-900">
+                  {user?.church || <span className="text-gray-400 italic">No especificada</span>}
+                </p>
               </div>
-            )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Briefcase className="h-5 w-5 text-gray-400" />
+              <div>
+                <p className="text-sm text-gray-500">Profesión</p>
+                <p className="font-medium text-gray-900">
+                  {user?.profession || <span className="text-gray-400 italic">No especificada</span>}
+                </p>
+              </div>
+            </div>
           </div>
         </CardContent>
 
@@ -128,6 +140,8 @@ export default function ProfilePage() {
           </Button>
         </CardFooter>
       </Card>
+
+      {isStudent && <DocumentsSection />}
 
       <EditProfileModal
         isOpen={isEditModalOpen}

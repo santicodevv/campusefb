@@ -34,6 +34,9 @@ export interface AuthUser {
   roles: Role[];
   isActive: boolean;
   moodleUserId?: number;
+  church?: string;
+  profession?: string;
+  profilePhotoUrl?: string;
 }
 
 export interface RefreshTokenResponse {

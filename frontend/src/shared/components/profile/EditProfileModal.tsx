@@ -15,6 +15,8 @@ import type { AuthUser } from '@/shared/types';
 
 interface EditProfileFormData {
   displayName: string;
+  church: string;
+  profession: string;
   password: string;
   confirmPassword: string;
 }
@@ -40,6 +42,8 @@ export function EditProfileModal({ isOpen, onClose, user }: EditProfileModalProp
   } = useForm<EditProfileFormData>({
     defaultValues: {
       displayName: user?.displayName || '',
+      church: user?.church || '',
+      profession: user?.profession || '',
       password: '',
       confirmPassword: '',
     },
@@ -51,6 +55,8 @@ export function EditProfileModal({ isOpen, onClose, user }: EditProfileModalProp
     if (isOpen) {
       reset({
         displayName: user?.displayName || '',
+        church: user?.church || '',
+        profession: user?.profession || '',
         password: '',
         confirmPassword: '',
       });
@@ -62,17 +68,23 @@ export function EditProfileModal({ isOpen, onClose, user }: EditProfileModalProp
   const onSubmit = async (data: EditProfileFormData) => {
     setIsSaving(true);
     try {
-      const payload: { displayName?: string; password?: string } = {};
+      const payload: { displayName?: string; church?: string; profession?: string; password?: string } = {};
 
       if (data.displayName && data.displayName !== user?.displayName) {
         payload.displayName = data.displayName;
+      }
+      if (data.church !== (user?.church || '')) {
+        payload.church = data.church;
+      }
+      if (data.profession !== (user?.profession || '')) {
+        payload.profession = data.profession;
       }
       if (data.password) {
         payload.password = data.password;
       }
 
       if (Object.keys(payload).length === 0) {
-        toast('No hay cambios que guardar.', { icon: 'ℹ️' });
+        toast('No hay cambios que guardar.', { icon: 'i' });
         onClose();
         return;
       }
@@ -95,7 +107,7 @@ export function EditProfileModal({ isOpen, onClose, user }: EditProfileModalProp
       isOpen={isOpen}
       onClose={onClose}
       title="Editar perfil"
-      description="Actualiza tu información básica de cuenta."
+      description="Actualiza tu información de cuenta."
       size="sm"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -111,6 +123,34 @@ export function EditProfileModal({ isOpen, onClose, user }: EditProfileModalProp
           />
           {errors.displayName && (
             <p className="text-sm text-red-600">{errors.displayName.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="church">Iglesia</Label>
+          <Input
+            id="church"
+            placeholder="Nombre de tu iglesia"
+            {...register('church', {
+              maxLength: { value: 255, message: 'Máximo 255 caracteres' },
+            })}
+          />
+          {errors.church && (
+            <p className="text-sm text-red-600">{errors.church.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="profession">Profesión</Label>
+          <Input
+            id="profession"
+            placeholder="Tu profesión u ocupación"
+            {...register('profession', {
+              maxLength: { value: 255, message: 'Máximo 255 caracteres' },
+            })}
+          />
+          {errors.profession && (
+            <p className="text-sm text-red-600">{errors.profession.message}</p>
           )}
         </div>
 

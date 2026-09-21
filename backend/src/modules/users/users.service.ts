@@ -447,6 +447,14 @@ export class UsersService {
       user.passwordHash = await bcrypt.hash(updateProfileDto.password, salt);
     }
 
+    if (updateProfileDto.church !== undefined) {
+      user.church = updateProfileDto.church;
+    }
+
+    if (updateProfileDto.profession !== undefined) {
+      user.profession = updateProfileDto.profession;
+    }
+
     const saved = await this.userRepository.save(user);
 
     // Sync displayName to Moodle if moodleUserId exists

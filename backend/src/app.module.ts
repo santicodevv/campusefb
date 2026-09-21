@@ -21,6 +21,7 @@ import { TranscriptsModule } from './modules/transcripts/transcripts.module';
 import { HealthModule } from './modules/health/health.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { AcademicProjectionModule } from './modules/academic-projection/academic-projection.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
 
 // Guards globales
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -69,6 +70,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     HealthModule,
     PaymentsModule,
     AcademicProjectionModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [

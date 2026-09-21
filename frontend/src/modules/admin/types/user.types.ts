@@ -12,6 +12,9 @@ export interface User {
   roles: Role[];
   createdAt: string;
   updatedAt: string;
+  church?: string;
+  profession?: string;
+  profilePhotoUrl?: string;
 }
 
 export interface MoodleUser {

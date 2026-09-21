@@ -45,6 +45,15 @@ export class User {
   @Column({ type: 'boolean', default: false, name: 'locally_edited' })
   locallyEdited: boolean;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  church: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  profession: string;
+
+  @Column({ type: 'varchar', length: 500, nullable: true, name: 'profile_photo_url' })
+  profilePhotoUrl: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
