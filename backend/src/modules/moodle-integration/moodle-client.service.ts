@@ -218,6 +218,29 @@ export class MoodleClientService {
   }
 
   /**
+   * Eliminar una categoría en Moodle
+   * @param categoryId - ID de la categoría en Moodle
+   * @param recursive - Si es true, elimina también las subcategorías y cursos
+   */
+  async deleteCategory(categoryId: number, recursive: boolean = true): Promise<void> {
+    this.logger.log(`Deleting category ${categoryId} from Moodle (recursive: ${recursive})...`);
+
+    const result = await this.callFunction('core_course_delete_categories', {
+      categories: [
+        {
+          id: categoryId,
+          recursive: recursive ? 1 : 0,
+        },
+      ],
+    });
+
+    this.logger.log(`Moodle delete category response: ${JSON.stringify(result)}`);
+
+    // Si hay error, Moodle lanza excepción que será capturada por callFunction
+    // Si no hay error, result es null o vacío
+  }
+
+  /**
    * Crear un usuario en Moodle
    * Retorna el moodleUserId del usuario recién creado
    */

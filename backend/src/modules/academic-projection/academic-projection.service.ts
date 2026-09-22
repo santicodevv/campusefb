@@ -88,6 +88,31 @@ export class ProjectionService {
 
   async deleteProgram(id: number): Promise<void> {
     const program = await this.findProgramById(id);
+
+    // Si el programa está vinculado a una categoría de Moodle, eliminarla también
+    if (program.moodleCategoryId) {
+      try {
+        // Eliminar la categoría en Moodle (recursive=true elimina subcategorías y cursos)
+        await this.moodleClient.deleteCategory(program.moodleCategoryId, true);
+
+        // Eliminar la categoría de la tabla local moodle_categories
+        await this.moodleCategoryRepository.delete({
+          moodleId: program.moodleCategoryId,
+        });
+      } catch (error) {
+        // Si falla en Moodle, lanzar error descriptivo
+        const errorMessage =
+          error?.response?.data?.message ||
+          error?.message ||
+          'Error desconocido';
+        throw new BadRequestException(
+          `No se pudo eliminar la categoría en Moodle: ${errorMessage}. ` +
+            `Puede que tenga cursos o subcategorías que impiden la eliminación.`,
+        );
+      }
+    }
+
+    // Eliminar relaciones locales y el programa
     await this.studyPlanRepository.delete({ programId: id });
     await this.studentProgramRepository.delete({ programId: id });
     await this.programRepository.remove(program);
