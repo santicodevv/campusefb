@@ -724,16 +724,16 @@ export class CoursesService {
    * Enroll a student in a course (syncs with Moodle)
    */
   async enrollStudent(
-    courseId: number,
+    courseMoodleId: number,
     userMoodleId: number,
     adminUserId: number,
   ): Promise<MoodleEnrolment> {
     const course = await this.courseRepository.findOne({
-      where: { id: courseId },
+      where: { moodleId: courseMoodleId },
     });
 
     if (!course) {
-      throw new NotFoundException(`Course with ID ${courseId} not found`);
+      throw new NotFoundException(`Course with moodleId ${courseMoodleId} not found`);
     }
 
     // Check if already enrolled
@@ -786,7 +786,7 @@ export class CoursesService {
       action: 'course.student_enrolled',
       entity: 'moodle_enrolments',
       entityKey: `${course.moodleId}-${userMoodleId}`,
-      afterData: { courseId, userMoodleId },
+      afterData: { courseMoodleId, userMoodleId },
       source: 'app',
     });
 
@@ -797,16 +797,16 @@ export class CoursesService {
    * Unenroll a student from a course (syncs with Moodle)
    */
   async unenrollStudent(
-    courseId: number,
+    courseMoodleId: number,
     userMoodleId: number,
     adminUserId: number,
   ): Promise<void> {
     const course = await this.courseRepository.findOne({
-      where: { id: courseId },
+      where: { moodleId: courseMoodleId },
     });
 
     if (!course) {
-      throw new NotFoundException(`Course with ID ${courseId} not found`);
+      throw new NotFoundException(`Course with moodleId ${courseMoodleId} not found`);
     }
 
     // Find existing enrolment
@@ -847,7 +847,7 @@ export class CoursesService {
       action: 'course.student_unenrolled',
       entity: 'moodle_enrolments',
       entityKey: `${course.moodleId}-${userMoodleId}`,
-      beforeData: { courseId, userMoodleId },
+      beforeData: { courseMoodleId, userMoodleId },
       source: 'app',
     });
   }
@@ -856,22 +856,22 @@ export class CoursesService {
    * Search students not enrolled in a course (for enrollment modal)
    */
   async searchStudentsNotEnrolled(
-    courseId: number,
+    courseMoodleId: number,
     search: string,
     limit: number = 20,
   ): Promise<MoodleUser[]> {
     const course = await this.courseRepository.findOne({
-      where: { id: courseId },
+      where: { moodleId: courseMoodleId },
     });
 
     if (!course) {
-      throw new NotFoundException(`Course with ID ${courseId} not found`);
+      throw new NotFoundException(`Course with moodleId ${courseMoodleId} not found`);
     }
 
     // Get already enrolled user IDs
     const enrolledUsers = await this.enrolmentRepository.find({
       where: {
-        courseMoodleId: course.moodleId,
+        courseMoodleId: courseMoodleId,
         enrolStatus: 'active',
       },
       select: ['userMoodleId'],
