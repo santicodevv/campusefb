@@ -716,6 +716,195 @@ export class CoursesService {
     return updated;
   }
 
+  // =====================
+  // STUDENT ENROLLMENT METHODS
+  // =====================
+
+  /**
+   * Enroll a student in a course (syncs with Moodle)
+   */
+  async enrollStudent(
+    courseId: number,
+    userMoodleId: number,
+    adminUserId: number,
+  ): Promise<MoodleEnrolment> {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+    });
+
+    if (!course) {
+      throw new NotFoundException(`Course with ID ${courseId} not found`);
+    }
+
+    // Check if already enrolled
+    const existingEnrolment = await this.enrolmentRepository.findOne({
+      where: {
+        courseMoodleId: course.moodleId,
+        userMoodleId,
+      },
+    });
+
+    if (existingEnrolment && existingEnrolment.enrolStatus === 'active') {
+      throw new BadRequestException('El estudiante ya está inscrito en este curso');
+    }
+
+    // Enroll in Moodle (roleid 5 = student)
+    try {
+      await this.moodleClient.enrolUser(course.moodleId, userMoodleId, 5);
+      this.logger.log(
+        `Enrolled user ${userMoodleId} in course ${course.moodleId} in Moodle`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to enroll user ${userMoodleId} in Moodle: ${error.message}`,
+      );
+      throw new BadRequestException(
+        `Error al matricular en Moodle: ${error.message}`,
+      );
+    }
+
+    // Create or update local enrolment record
+    let enrolment: MoodleEnrolment;
+    if (existingEnrolment) {
+      existingEnrolment.enrolStatus = 'active';
+      existingEnrolment.roleCode = 'student';
+      enrolment = await this.enrolmentRepository.save(existingEnrolment);
+    } else {
+      enrolment = this.enrolmentRepository.create({
+        courseMoodleId: course.moodleId,
+        userMoodleId,
+        roleCode: 'student',
+        enrolStatus: 'active',
+        lastSyncedAt: new Date(),
+      });
+      enrolment = await this.enrolmentRepository.save(enrolment);
+    }
+
+    // Audit log
+    await this.auditService.log({
+      actorUserId: adminUserId,
+      action: 'course.student_enrolled',
+      entity: 'moodle_enrolments',
+      entityKey: `${course.moodleId}-${userMoodleId}`,
+      afterData: { courseId, userMoodleId },
+      source: 'app',
+    });
+
+    return enrolment;
+  }
+
+  /**
+   * Unenroll a student from a course (syncs with Moodle)
+   */
+  async unenrollStudent(
+    courseId: number,
+    userMoodleId: number,
+    adminUserId: number,
+  ): Promise<void> {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+    });
+
+    if (!course) {
+      throw new NotFoundException(`Course with ID ${courseId} not found`);
+    }
+
+    // Find existing enrolment
+    const existingEnrolment = await this.enrolmentRepository.findOne({
+      where: {
+        courseMoodleId: course.moodleId,
+        userMoodleId,
+        enrolStatus: 'active',
+      },
+    });
+
+    if (!existingEnrolment) {
+      throw new NotFoundException('El estudiante no está inscrito en este curso');
+    }
+
+    // Unenroll from Moodle
+    try {
+      await this.moodleClient.suspendEnrolment(course.moodleId, userMoodleId);
+      this.logger.log(
+        `Unenrolled user ${userMoodleId} from course ${course.moodleId} in Moodle`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to unenroll user ${userMoodleId} from Moodle: ${error.message}`,
+      );
+      throw new BadRequestException(
+        `Error al desmatricular de Moodle: ${error.message}`,
+      );
+    }
+
+    // Update local enrolment status
+    existingEnrolment.enrolStatus = 'suspended';
+    await this.enrolmentRepository.save(existingEnrolment);
+
+    // Audit log
+    await this.auditService.log({
+      actorUserId: adminUserId,
+      action: 'course.student_unenrolled',
+      entity: 'moodle_enrolments',
+      entityKey: `${course.moodleId}-${userMoodleId}`,
+      beforeData: { courseId, userMoodleId },
+      source: 'app',
+    });
+  }
+
+  /**
+   * Search students not enrolled in a course (for enrollment modal)
+   */
+  async searchStudentsNotEnrolled(
+    courseId: number,
+    search: string,
+    limit: number = 20,
+  ): Promise<MoodleUser[]> {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+    });
+
+    if (!course) {
+      throw new NotFoundException(`Course with ID ${courseId} not found`);
+    }
+
+    // Get already enrolled user IDs
+    const enrolledUsers = await this.enrolmentRepository.find({
+      where: {
+        courseMoodleId: course.moodleId,
+        enrolStatus: 'active',
+      },
+      select: ['userMoodleId'],
+    });
+
+    const enrolledMoodleIds = enrolledUsers.map((e) => Number(e.userMoodleId));
+
+    // Build query for students not enrolled
+    const query = this.moodleUserRepository
+      .createQueryBuilder('user')
+      .where('user.userType = :userType', { userType: 'student' })
+      .andWhere('user.suspended = :suspended', { suspended: false });
+
+    if (enrolledMoodleIds.length > 0) {
+      query.andWhere('user.moodleId NOT IN (:...enrolledIds)', {
+        enrolledIds: enrolledMoodleIds,
+      });
+    }
+
+    if (search && search.trim()) {
+      query.andWhere(
+        '(user.firstname ILIKE :search OR user.lastname ILIKE :search OR user.email ILIKE :search OR user.username ILIKE :search)',
+        { search: `%${search.trim()}%` },
+      );
+    }
+
+    return query
+      .orderBy('user.lastname', 'ASC')
+      .addOrderBy('user.firstname', 'ASC')
+      .take(limit)
+      .getMany();
+  }
+
   /**
    * Toggle course visibility (local + Moodle sync)
    */

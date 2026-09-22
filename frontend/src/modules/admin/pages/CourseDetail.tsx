@@ -8,10 +8,12 @@ import { CourseEnrolledUsers } from '../components/course-detail/CourseEnrolledU
 import { CourseAssignedTeachers } from '../components/course-detail/CourseAssignedTeachers';
 import { CourseGradesTab } from '../components/course-detail/CourseGradesTab';
 import { CourseAddTeacherModal } from '../components/course-detail/CourseAddTeacherModal';
+import { CourseAddStudentModal } from '../components/course-detail/CourseAddStudentModal';
 
 export default function AdminCourseDetail() {
   const {
     navigate,
+    courseId,
     course,
     courseLoading,
     enrolledUsers,
@@ -26,6 +28,8 @@ export default function AdminCourseDetail() {
     setRoleFilter,
     showAddTeacherModal,
     setShowAddTeacherModal,
+    showAddStudentModal,
+    setShowAddStudentModal,
     teacherSearch,
     setTeacherSearch,
     activeTab,
@@ -36,6 +40,8 @@ export default function AdminCourseDetail() {
     assignTeacherMutation,
     removeTeacherMutation,
     setPrimaryMutation,
+    enrollStudentMutation,
+    unenrollStudentMutation,
     filteredUsers,
     students,
     teachers,
@@ -83,7 +89,7 @@ export default function AdminCourseDetail() {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <CourseInfoCard course={course} />
-            <CourseEnrolledUsers 
+            <CourseEnrolledUsers
               enrolledUsers={enrolledUsers}
               filteredUsers={filteredUsers}
               usersLoading={usersLoading}
@@ -93,6 +99,8 @@ export default function AdminCourseDetail() {
               setRoleFilter={setRoleFilter}
               studentsCount={students.length}
               teachersCount={teachers.length}
+              onAddStudent={() => setShowAddStudentModal(true)}
+              unenrollStudentMutation={unenrollStudentMutation}
             />
           </div>
 
@@ -115,13 +123,20 @@ export default function AdminCourseDetail() {
         />
       )}
 
-      <CourseAddTeacherModal 
+      <CourseAddTeacherModal
         showAddTeacherModal={showAddTeacherModal}
         setShowAddTeacherModal={setShowAddTeacherModal}
         teacherSearch={teacherSearch}
         setTeacherSearch={setTeacherSearch}
         availableTeachers={availableTeachers}
         assignTeacherMutation={assignTeacherMutation}
+      />
+
+      <CourseAddStudentModal
+        courseId={Number(courseId)}
+        showModal={showAddStudentModal}
+        setShowModal={setShowAddStudentModal}
+        enrollStudentMutation={enrollStudentMutation}
       />
     </div>
   );

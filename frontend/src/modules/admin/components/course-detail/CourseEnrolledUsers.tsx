@@ -1,6 +1,7 @@
 import { Card, CardContent, Input, Button, Badge, Spinner } from '@/shared/components/ui';
-import { Users, Search, GraduationCap, UserCheck } from 'lucide-react';
+import { Users, Search, GraduationCap, UserCheck, UserPlus, Trash2 } from 'lucide-react';
 import type { EnrolledUserWithDetails } from '@/shared/types';
+import type { UseMutationResult } from '@tanstack/react-query';
 import { getAccessStatus } from '../../hooks/useCourseDetail';
 
 interface CourseEnrolledUsersProps {
@@ -13,6 +14,8 @@ interface CourseEnrolledUsersProps {
   setRoleFilter: (val: 'all' | 'student' | 'teacher') => void;
   studentsCount: number;
   teachersCount: number;
+  onAddStudent?: () => void;
+  unenrollStudentMutation?: UseMutationResult<unknown, Error, number>;
 }
 
 export function CourseEnrolledUsers({
@@ -25,6 +28,8 @@ export function CourseEnrolledUsers({
   setRoleFilter,
   studentsCount,
   teachersCount,
+  onAddStudent,
+  unenrollStudentMutation,
 }: CourseEnrolledUsersProps) {
   return (
     <Card className="lg:col-span-2">
@@ -34,6 +39,17 @@ export function CourseEnrolledUsers({
             <Users className="h-5 w-5 inline mr-2" />
             Personas Inscritas ({enrolledUsers?.length || 0})
           </h3>
+          {onAddStudent && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={onAddStudent}
+              className="flex items-center gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              Agregar Estudiante
+            </Button>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-4 mb-4">
@@ -86,6 +102,9 @@ export function CourseEnrolledUsers({
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Rol</th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Último Acceso</th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Estado</th>
+                  {unenrollStudentMutation && (
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -145,6 +164,28 @@ export function CourseEnrolledUsers({
                         {user.enrolStatus === 'active' ? 'Activo' : 'Suspendido'}
                       </Badge>
                     </td>
+                    {unenrollStudentMutation && user.roleCode === 'student' && (
+                      <td className="px-4 py-3 text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            if (window.confirm(`¿Estás seguro de desinscribir a ${user.firstname} ${user.lastname} de este curso?`)) {
+                              unenrollStudentMutation.mutate(user.moodleId);
+                            }
+                          }}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          disabled={unenrollStudentMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    )}
+                    {unenrollStudentMutation && user.roleCode !== 'student' && (
+                      <td className="px-4 py-3 text-center">
+                        <span className="text-gray-400 text-xs">-</span>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

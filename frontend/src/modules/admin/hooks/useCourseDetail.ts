@@ -34,6 +34,7 @@ export function useCourseDetail() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'student' | 'teacher'>('all');
   const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [teacherSearch, setTeacherSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'users' | 'grades'>('users');
   const [gradesSearch, setGradesSearch] = useState('');
@@ -124,6 +125,33 @@ export function useCourseDetail() {
     },
   });
 
+  const enrollStudentMutation = useMutation<unknown, Error, number>({
+    mutationFn: (userMoodleId) => coursesApi.enrollStudent(Number(courseId), userMoodleId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['enrolled-users', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['course-detail', courseId] });
+      toast.success('Estudiante inscrito correctamente');
+      setShowAddStudentModal(false);
+    },
+    onError: (error: unknown) => {
+      const apiError = error as { response?: { data?: { message?: string } } };
+      toast.error(apiError.response?.data?.message || 'Error al inscribir estudiante');
+    },
+  });
+
+  const unenrollStudentMutation = useMutation<unknown, Error, number>({
+    mutationFn: (userMoodleId) => coursesApi.unenrollStudent(Number(courseId), userMoodleId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['enrolled-users', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['course-detail', courseId] });
+      toast.success('Estudiante desinscrito correctamente');
+    },
+    onError: (error: unknown) => {
+      const apiError = error as { response?: { data?: { message?: string } } };
+      toast.error(apiError.response?.data?.message || 'Error al desinscribir estudiante');
+    },
+  });
+
   const filteredUsers = enrolledUsers?.filter((user: EnrolledUserWithDetails) => {
     const matchesSearch =
       !search ||
@@ -160,6 +188,8 @@ export function useCourseDetail() {
     setRoleFilter,
     showAddTeacherModal,
     setShowAddTeacherModal,
+    showAddStudentModal,
+    setShowAddStudentModal,
     teacherSearch,
     setTeacherSearch,
     activeTab,
@@ -170,6 +200,8 @@ export function useCourseDetail() {
     assignTeacherMutation,
     removeTeacherMutation,
     setPrimaryMutation,
+    enrollStudentMutation,
+    unenrollStudentMutation,
     filteredUsers,
     students,
     teachers,

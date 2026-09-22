@@ -202,4 +202,48 @@ export const coursesApi = {
     );
     return response.data;
   },
+
+  // =====================
+  // STUDENT ENROLLMENT
+  // =====================
+
+  /**
+   * Search students not enrolled in a course
+   */
+  async searchStudentsNotEnrolled(
+    courseId: number,
+    search: string,
+    limit?: number,
+  ): Promise<{ moodleId: number; username: string; email: string; firstname: string; lastname: string }[]> {
+    const response = await api.get(`/courses/${courseId}/students/search`, {
+      params: { search, limit },
+    });
+    return response.data;
+  },
+
+  /**
+   * Enroll a student in a course
+   */
+  async enrollStudent(
+    courseId: number,
+    userMoodleId: number,
+  ): Promise<{ success: boolean }> {
+    const response = await api.post(`/courses/${courseId}/students`, {
+      userMoodleId,
+    });
+    return response.data;
+  },
+
+  /**
+   * Unenroll a student from a course
+   */
+  async unenrollStudent(
+    courseId: number,
+    userMoodleId: number,
+  ): Promise<{ success: boolean }> {
+    const response = await api.delete(
+      `/courses/${courseId}/students/${userMoodleId}`,
+    );
+    return response.data;
+  },
 };

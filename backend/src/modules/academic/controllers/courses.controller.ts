@@ -233,4 +233,52 @@ export class CoursesController {
   ) {
     return this.coursesService.getCoursesForTeacher(teacherId);
   }
+
+  // =====================
+  // STUDENT ENROLLMENT ENDPOINTS
+  // =====================
+
+  /**
+   * Search students not enrolled in a course
+   */
+  @Roles(RoleCode.ADMIN)
+  @Get(':id/students/search')
+  async searchStudentsNotEnrolled(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('search') search: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.coursesService.searchStudentsNotEnrolled(
+      id,
+      search || '',
+      limit ? parseInt(limit, 10) : 20,
+    );
+  }
+
+  /**
+   * Enroll a student in a course
+   */
+  @Roles(RoleCode.ADMIN)
+  @Post(':id/students')
+  async enrollStudent(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { userMoodleId: number },
+    @CurrentUser() user: User,
+  ) {
+    return this.coursesService.enrollStudent(id, body.userMoodleId, user.id);
+  }
+
+  /**
+   * Unenroll a student from a course
+   */
+  @Roles(RoleCode.ADMIN)
+  @Delete(':id/students/:userMoodleId')
+  async unenrollStudent(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('userMoodleId', ParseIntPipe) userMoodleId: number,
+    @CurrentUser() user: User,
+  ) {
+    await this.coursesService.unenrollStudent(id, userMoodleId, user.id);
+    return { success: true };
+  }
 }
