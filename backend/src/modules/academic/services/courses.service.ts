@@ -879,11 +879,10 @@ export class CoursesService {
 
     const enrolledMoodleIds = enrolledUsers.map((e) => Number(e.userMoodleId));
 
-    // Build query for students not enrolled
+    // Build query for users not enrolled (excluding suspended users)
     const query = this.moodleUserRepository
       .createQueryBuilder('user')
-      .where('user.userType = :userType', { userType: 'student' })
-      .andWhere('user.suspended = :suspended', { suspended: false });
+      .where('user.suspended = :suspended', { suspended: false });
 
     if (enrolledMoodleIds.length > 0) {
       query.andWhere('user.moodleId NOT IN (:...enrolledIds)', {
