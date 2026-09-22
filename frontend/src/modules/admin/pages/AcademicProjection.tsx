@@ -277,6 +277,7 @@ function ProgramsTab({ programs }: { programs: AcademicProgram[] }) {
   });
 
   // Renderizar filas de materias (hijos de un programa)
+  // level=1 es el primer nivel bajo el programa principal
   const renderMateriaRows = (children: CategoryHierarchyNode[], level: number = 1) => {
     return children.map((category) => {
       const isExpanded = expandedMaterias.has(category.moodleId);
@@ -284,23 +285,34 @@ function ProgramsTab({ programs }: { programs: AcademicProgram[] }) {
       const hasMoodleCourses = category.courses.length > 0 || category.coursecount > 0;
       const isExpandable = hasChildren || hasMoodleCourses;
 
+      // Si es nivel 1 y tiene subcategorías, es un "Programa" (subprograma)
+      // Si no, es una "Materia"
+      const isSubprogram = level === 1 && hasChildren;
+      const badgeLabel = isSubprogram ? 'Programa' : 'Materia';
+      const badgeColor = isSubprogram
+        ? 'text-indigo-700 bg-indigo-100'
+        : 'text-emerald-700 bg-emerald-100';
+      const iconColor = isSubprogram ? 'text-indigo-600' : 'text-emerald-600';
+      const rowBg = isSubprogram ? 'bg-indigo-50/50 hover:bg-indigo-50' : 'bg-emerald-50/50 hover:bg-emerald-50';
+      const chevronHoverBg = isSubprogram ? 'hover:bg-indigo-100' : 'hover:bg-emerald-100';
+
       return (
         <React.Fragment key={`category-${category.moodleId}`}>
-          <tr className="bg-emerald-50/50 hover:bg-emerald-50">
+          <tr className={rowBg}>
             <td className="px-4 py-2 text-gray-600" style={{ paddingLeft: `${level * 24 + 16}px` }}>
               <div className="flex items-center gap-2">
                 {isExpandable ? (
                   <button
                     onClick={() => toggleMateria(category.moodleId)}
-                    className="p-0.5 hover:bg-emerald-100 rounded"
+                    className={`p-0.5 ${chevronHoverBg} rounded`}
                   >
-                    {isExpanded ? <ChevronDown className="w-4 h-4 text-emerald-600" /> : <ChevronRight className="w-4 h-4 text-emerald-600" />}
+                    {isExpanded ? <ChevronDown className={`w-4 h-4 ${iconColor}`} /> : <ChevronRight className={`w-4 h-4 ${iconColor}`} />}
                   </button>
                 ) : (
                   <span className="w-5" />
                 )}
-                <FileText className="w-4 h-4 text-emerald-600" />
-                <span className="text-xs font-medium text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Materia</span>
+                <FileText className={`w-4 h-4 ${iconColor}`} />
+                <span className={`text-xs font-medium ${badgeColor} px-1.5 py-0.5 rounded`}>{badgeLabel}</span>
               </div>
             </td>
             <td className="px-4 py-2 text-gray-700">{category.name}</td>
