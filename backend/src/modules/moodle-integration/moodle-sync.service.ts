@@ -880,10 +880,9 @@ export class MoodleSyncService {
 
       synced++;
 
-      if (
-        (Number(mCat.parent) === 0 || Number(mCat.depth) === 2) &&
-        (Number(mCat.coursecount) > 0 || Number(mCat.depth) <= 2)
-      ) {
+      // Solo crear programas para categorías raíz (parent === 0)
+      // Las subcategorías se muestran dentro de la jerarquía del programa padre
+      if (Number(mCat.parent) === 0) {
         const created = await this.upsertProgramFromCategory(mCat);
         if (created) programsCreated++;
       }

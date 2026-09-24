@@ -285,10 +285,10 @@ function ProgramsTab({ programs }: { programs: AcademicProgram[] }) {
       const hasMoodleCourses = category.courses.length > 0 || category.coursecount > 0;
       const isExpandable = hasChildren || hasMoodleCourses;
 
-      // Si es nivel 1 y tiene subcategorías, es un "Programa" (subprograma)
-      // Si no, es una "Materia"
-      const isSubprogram = level === 1 && hasChildren;
-      const badgeLabel = isSubprogram ? 'Programa' : 'Materia';
+      // Si es nivel 1, es un "Subprograma" (subcategoría del programa principal)
+      // Si es nivel 2+, es una "Materia"
+      const isSubprogram = level === 1;
+      const badgeLabel = isSubprogram ? 'Subprograma' : 'Materia';
       const badgeColor = isSubprogram
         ? 'text-indigo-700 bg-indigo-100'
         : 'text-emerald-700 bg-emerald-100';
@@ -360,7 +360,7 @@ function ProgramsTab({ programs }: { programs: AcademicProgram[] }) {
           variant="outline"
           size="sm"
           onClick={() => {
-            if (window.confirm('¿Eliminar programas creados desde categorías que no son raíz? Esta acción no se puede deshacer.')) {
+            if (window.confirm('¿Eliminar programas creados desde subcategorías de Moodle (no programas principales)? Esta acción no se puede deshacer.')) {
               cleanupMutation.mutate();
             }
           }}
@@ -440,7 +440,7 @@ function ProgramsTab({ programs }: { programs: AcademicProgram[] }) {
                           )}
                           {hasSubcategories && (
                             <span className="text-xs text-gray-400">
-                              ({categoryData.children.length} materias)
+                              ({categoryData.children.length} subprogramas)
                             </span>
                           )}
                         </div>
@@ -473,11 +473,11 @@ function ProgramsTab({ programs }: { programs: AcademicProgram[] }) {
                     </tr>
                     {/* Renderizar subcategorías (materias) del programa */}
                     {isExpanded && categoryData && hasSubcategories && renderMateriaRows(categoryData.children)}
-                    {/* Mensaje si está expandido pero no tiene materias */}
+                    {/* Mensaje si está expandido pero no tiene subprogramas */}
                     {isExpanded && categoryData && !hasSubcategories && (
                       <tr className="bg-gray-50">
                         <td colSpan={4} className="px-4 py-2 text-gray-500 text-sm italic pl-12">
-                          Sin materias registradas en este programa
+                          Sin subprogramas registrados en este programa
                         </td>
                       </tr>
                     )}
