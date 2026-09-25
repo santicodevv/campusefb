@@ -89,30 +89,10 @@ export class ProjectionService {
   async deleteProgram(id: number): Promise<void> {
     const program = await this.findProgramById(id);
 
-    // Si el programa está vinculado a una categoría de Moodle, intentar eliminarla
-    if (program.moodleCategoryId) {
-      try {
-        // Eliminar la categoría en Moodle (recursive=true elimina subcategorías y cursos)
-        await this.moodleClient.deleteCategory(program.moodleCategoryId, true);
-
-        // Eliminar la categoría de la tabla local moodle_categories
-        await this.moodleCategoryRepository.delete({
-          moodleId: program.moodleCategoryId,
-        });
-      } catch (error) {
-        // Si falla en Moodle, solo registrar el error pero continuar con la eliminación local
-        // Esto permite eliminar programas locales aunque la categoría en Moodle tenga restricciones
-        console.warn(
-          `No se pudo eliminar la categoría ${program.moodleCategoryId} en Moodle: ${error?.message}. ` +
-            `Se procederá a eliminar el programa localmente.`,
-        );
-
-        // Eliminar solo la referencia local de la categoría
-        await this.moodleCategoryRepository.delete({
-          moodleId: program.moodleCategoryId,
-        });
-      }
-    }
+    // NO eliminamos la categoría en Moodle ni los cursos.
+    // El programa en nuestra app es solo una referencia local.
+    // Si se desea eliminar la categoría en Moodle, debe hacerse directamente allí.
+    // La categoría en moodle_categories se mantiene para posible re-vinculación futura.
 
     // Eliminar relaciones locales y el programa
     await this.studyPlanRepository.delete({ programId: id });
