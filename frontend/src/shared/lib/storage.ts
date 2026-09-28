@@ -2,6 +2,8 @@
 import Cookies from 'js-cookie';
 
 const ACCESS_TOKEN_KEY = 'moddle_access_token';
+// Debe coincidir con STORAGE_KEYS.LAST_ACTIVITY (usado por useSessionTimeout)
+const LAST_ACTIVITY_KEY = 'moddle_last_activity';
 const COOKIE_OPTIONS = {
   secure: import.meta.env.PROD,
   sameSite: 'strict' as const,
@@ -17,6 +19,9 @@ export const storage = {
 
   setAccessToken(token: string): void {
     Cookies.set(ACCESS_TOKEN_KEY, token, COOKIE_OPTIONS);
+    // Un token nuevo (login, SSO o refresh) cuenta como actividad: evita que un
+    // timestamp viejo de una sesión anterior cierre la sesión recién iniciada.
+    localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
   },
 
   removeAccessToken(): void {
@@ -26,6 +31,7 @@ export const storage = {
   // Clear all auth data
   clearAuth(): void {
     Cookies.remove(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(LAST_ACTIVITY_KEY);
   },
 
   // Check if user has a token (doesn't validate it)

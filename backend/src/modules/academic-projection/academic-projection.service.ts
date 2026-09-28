@@ -156,13 +156,19 @@ export class ProjectionService {
       );
     }
 
-    // Agrupar los cursos directos de cada materia del subprograma.
+    // Agrupar los cursos por categoría: la seleccionada (programa o
+    // subprograma) y todas sus descendientes. Se usa `parent` y no `depth`
+    // porque en Moodle la profundidad no siempre es consistente.
     const allCategories = await this.moodleCategoryRepository.find();
-    const materias = allCategories
-      .filter(
-        (cat) => Number(cat.parent) === categoryMoodleId && cat.depth === 3,
-      )
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const descendantIds = new Set(
+      this.getChildCategoryIds(categoryMoodleId, allCategories),
+    );
+    const materias = [
+      category,
+      ...allCategories
+        .filter((cat) => descendantIds.has(Number(cat.moodleId)))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    ];
     const categoryIds = materias.map((materia) => Number(materia.moodleId));
     const courses =
       categoryIds.length > 0
@@ -180,22 +186,28 @@ export class ProjectionService {
     }
 
     return {
-      materias: materias.map((materia) => ({
-        id: materia.id,
-        moodleId: Number(materia.moodleId),
-        name: materia.name,
-        cursos: (coursesByCategory.get(Number(materia.moodleId)) ?? []).map(
-          (course) => ({
-            id: course.id,
-            courseMoodleId: Number(course.moodleId),
-            courseName:
-              course.subjectName ||
-              course.fullname ||
-              `Curso ${course.moodleId}`,
-            level: 1,
-          }),
-        ),
-      })),
+      materias: materias
+        .filter(
+          (materia) =>
+            Number(materia.moodleId) === categoryMoodleId ||
+            coursesByCategory.has(Number(materia.moodleId)),
+        )
+        .map((materia) => ({
+          id: materia.id,
+          moodleId: Number(materia.moodleId),
+          name: materia.name,
+          cursos: (coursesByCategory.get(Number(materia.moodleId)) ?? []).map(
+            (course) => ({
+              id: course.id,
+              courseMoodleId: Number(course.moodleId),
+              courseName:
+                course.subjectName ||
+                course.fullname ||
+                `Curso ${course.moodleId}`,
+              level: 1,
+            }),
+          ),
+        })),
     };
   }
 
@@ -211,7 +223,7 @@ export class ProjectionService {
 
     return (
       await this.moodleCategoryRepository.find({
-        where: { parent: subprogramMoodleId, depth: 3 },
+        where: { parent: subprogramMoodleId },
         order: { name: 'ASC' },
       })
     ).map((materia) => ({
