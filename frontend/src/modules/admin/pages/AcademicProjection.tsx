@@ -552,11 +552,13 @@ function ProgramSubprogramSelector({
   programMoodleId,
   subprogramMoodleId,
   onChange,
+  children,
 }: {
   hierarchy: CategoryHierarchyNode[];
   programMoodleId: number | null;
   subprogramMoodleId: number | null;
   onChange: (programMoodleId: number | null, subprogramMoodleId: number | null) => void;
+  children?: React.ReactNode;
 }) {
   const selectedRoot = hierarchy.find((node) => node.moodleId === programMoodleId);
   const subprogramOptions = [...(selectedRoot?.children ?? [])].sort((a, b) => a.name.localeCompare(b.name));
@@ -588,6 +590,7 @@ function ProgramSubprogramSelector({
           <option key={node.moodleId} value={node.moodleId}>{node.name.trim()}</option>
         ))}
       </select>
+      {children}
     </div>
   );
 }
@@ -979,7 +982,17 @@ function DemandBySubjectTab() {
   const [rootMoodleId, setRootMoodleId] = useState<number | null>(null);
   const [subprogramMoodleId, setSubprogramMoodleId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
   const PAGE_SIZE = 10;
+
+  React.useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [searchInput]);
 
   // Categoría consultada: el subprograma si hay uno elegido, si no el programa completo
   const selectedMoodleId = subprogramMoodleId ?? rootMoodleId;
@@ -992,8 +1005,8 @@ function DemandBySubjectTab() {
   }, [hierarchy, rootMoodleId]);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['student-grades-matrix', selectedMoodleId, page],
-    queryFn: () => projectionApi.getStudentGradesMatrix(selectedMoodleId!, page, PAGE_SIZE),
+    queryKey: ['student-grades-matrix', selectedMoodleId, page, search],
+    queryFn: () => projectionApi.getStudentGradesMatrix(selectedMoodleId!, page, PAGE_SIZE, search || undefined),
     enabled: !!selectedMoodleId,
   });
 
@@ -1017,7 +1030,23 @@ function DemandBySubjectTab() {
           programMoodleId={rootMoodleId}
           subprogramMoodleId={subprogramMoodleId}
           onChange={handleSelectionChange}
-        />
+        >
+          <label htmlFor="demand-student-search" className="text-sm font-medium text-gray-700">
+            Buscar estudiante:
+          </label>
+          <div className="relative w-full sm:w-64">
+            <Search aria-hidden="true" className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+            <input
+              id="demand-student-search"
+              type="search"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="Nombre o apellido"
+              disabled={!selectedMoodleId}
+              className="w-full border border-gray-300 rounded-md pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+            />
+          </div>
+        </ProgramSubprogramSelector>
       </div>
 
       {!selectedMoodleId && <EmptyState message="Selecciona un programa para ver las notas" />}
@@ -1053,7 +1082,9 @@ function DemandBySubjectTab() {
                 {students.length === 0 ? (
                   <tr>
                     <td colSpan={courses.length + 2} className="px-4 py-8 text-center text-gray-500">
-                      No hay estudiantes enrolados en los cursos de esta selección
+                      {search
+                        ? 'No hay estudiantes que coincidan con la búsqueda en esta selección'
+                        : 'No hay estudiantes enrolados en los cursos de esta selección'}
                     </td>
                   </tr>
                 ) : (

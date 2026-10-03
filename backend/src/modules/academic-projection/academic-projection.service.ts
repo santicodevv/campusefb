@@ -1121,6 +1121,7 @@ export class ProjectionService {
     categoryMoodleId: number,
     page: number = 1,
     limit: number = 10,
+    search?: string,
   ): Promise<{
     courses: { id: number; shortname: string | null; name: string }[];
     students: {
@@ -1185,6 +1186,17 @@ export class ProjectionService {
       .orderBy('mu.suspended', 'ASC')
       .addOrderBy('mu.firstname', 'ASC')
       .addOrderBy('mu.lastname', 'ASC');
+
+    // Buscar cada palabra en el nombre completo antes de contar y paginar.
+    const searchWords = search?.trim().split(/\s+/).filter(Boolean) ?? [];
+    searchWords.forEach((word, index) => {
+      const parameter = `studentSearch${index}`;
+      const escapedWord = word.replace(/[\\%_]/g, '\\$&');
+      studentsQb.andWhere(
+        `CONCAT_WS(' ', mu.firstname, mu.lastname) ILIKE :${parameter}`,
+        { [parameter]: `%${escapedWord}%` },
+      );
+    });
 
     const total = await studentsQb.getCount();
     const users = await studentsQb

@@ -207,9 +207,9 @@ export const projectionApi = {
     return response.data;
   },
 
-  async getStudentGradesMatrix(categoryMoodleId: number, page: number = 1, limit: number = 10): Promise<StudentGradesMatrix> {
+  async getStudentGradesMatrix(categoryMoodleId: number, page: number = 1, limit: number = 10, search?: string): Promise<StudentGradesMatrix> {
     const response = await api.get<StudentGradesMatrix>('/academic-projection/student-grades-matrix', {
-      params: { categoryMoodleId, page, limit },
+      params: { categoryMoodleId, page, limit, search },
     });
     return response.data;
   },

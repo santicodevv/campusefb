@@ -316,6 +316,7 @@ export class ProjectionController {
     @Query('categoryMoodleId') categoryMoodleId?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('search') search?: string,
   ) {
     if (!categoryMoodleId) {
       return { courses: [], students: [], total: 0, page: 1, limit: 10 };
@@ -324,6 +325,7 @@ export class ProjectionController {
       parseInt(categoryMoodleId, 10),
       page ? Math.max(1, parseInt(page, 10)) : 1,
       limit ? Math.min(100, Math.max(1, parseInt(limit, 10))) : 10,
+      search,
     );
   }
 }
