@@ -932,19 +932,19 @@ export class StudentGradesService {
     const courseMap = new Map(courses.map((c) => [c.moodleId, c]));
 
     // Jerarquía de categorías de cada curso:
-    // Programa (depth 2, ej. DIPLOMATURA) > Materia (depth 3, ej. HOMILECTICA).
+    // Identificamos el Programa (vinculado a sga_programs) y la Materia (categoría hija del Programa).
     const hierarchyRows: {
       course_moodle_id: string;
       cat_moodle_id: string;
       cat_name: string;
-      cat_depth: number;
+      cat_parent: string;
+      sga_program_id: string | null;
     }[] = await this.courseRepository.manager.query(
       `WITH RECURSIVE chain AS (
          SELECT c.moodle_id AS course_moodle_id,
                 mc.moodle_id AS cat_moodle_id,
                 mc.name AS cat_name,
-                mc.parent AS cat_parent,
-                mc.depth AS cat_depth
+                mc.parent AS cat_parent
          FROM moodle_courses c
          JOIN moodle_categories mc ON mc.moodle_id = c.category_id
          WHERE c.moodle_id = ANY($1::bigint[])
@@ -952,17 +952,16 @@ export class StudentGradesService {
          SELECT ch.course_moodle_id,
                 p.moodle_id,
                 p.name,
-                p.parent,
-                p.depth
+                p.parent
          FROM chain ch
          JOIN moodle_categories p ON p.moodle_id = ch.cat_parent
-         WHERE ch.cat_depth > 2
        )
-       SELECT course_moodle_id, cat_moodle_id, cat_name, cat_depth
-       FROM chain
-       WHERE cat_depth IN (2, 3)`,
+       SELECT c.course_moodle_id, c.cat_moodle_id, c.cat_name, c.cat_parent, sp.id AS sga_program_id
+       FROM chain c
+       LEFT JOIN sga_programs sp ON sp.moodle_category_id = c.cat_moodle_id`,
       [courseMoodleIds],
     );
+
     const hierarchyMap = new Map<
       number,
       {
@@ -971,6 +970,8 @@ export class StudentGradesService {
         materiaName: string | null;
       }
     >();
+
+    // Pasada 1: Identificar el programa
     for (const row of hierarchyRows) {
       const key = Number(row.course_moodle_id);
       const entry = hierarchyMap.get(key) || {
@@ -978,13 +979,24 @@ export class StudentGradesService {
         programName: null,
         materiaName: null,
       };
-      if (Number(row.cat_depth) === 2) {
+      if (row.sga_program_id !== null) {
         entry.programMoodleId = Number(row.cat_moodle_id);
         entry.programName = row.cat_name;
-      } else {
-        entry.materiaName = row.cat_name;
       }
       hierarchyMap.set(key, entry);
+    }
+
+    // Pasada 2: Identificar el subprograma (la categoría cuyo padre es el programa)
+    for (const row of hierarchyRows) {
+      const key = Number(row.course_moodle_id);
+      const entry = hierarchyMap.get(key);
+      if (
+        entry &&
+        entry.programMoodleId !== null &&
+        Number(row.cat_parent) === entry.programMoodleId
+      ) {
+        entry.materiaName = row.cat_name;
+      }
     }
 
     // Get Moodle grade items for all courses (exclude 'course' type which is the total)
