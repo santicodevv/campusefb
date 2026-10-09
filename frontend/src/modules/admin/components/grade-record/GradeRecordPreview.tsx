@@ -1,12 +1,13 @@
 import { Card, CardContent, Button, Spinner } from '@/shared/components/ui';
 import { Download } from 'lucide-react';
-import { getEquivalence, calculateCumulativeIndex } from '../../hooks/useAdminGradeRecord';
+import { getEquivalence, calculateCumulativeIndex, formatRecordKey } from '../../hooks/useAdminGradeRecord';
 import type { CourseWithPeriod, UserGradesData } from '../../hooks/useAdminGradeRecord';
 
 interface GradeRecordPreviewProps {
   gradesLoading: boolean;
   userGrades: UserGradesData | null | undefined;
   allCourses: CourseWithPeriod[];
+  selectedProgramName?: string | null;
   handlePrint: () => void;
   printRef: React.RefObject<HTMLDivElement | null>;
   today: string;
@@ -17,6 +18,7 @@ export function GradeRecordPreview({
   gradesLoading,
   userGrades,
   allCourses,
+  selectedProgramName,
   handlePrint,
   printRef,
   today,
@@ -68,6 +70,11 @@ export function GradeRecordPreview({
                 <strong style={{ fontWeight: 'bold' }}>Documento Nacional de Identidad:</strong>{' '}
                 {userGrades.user.username || userGrades.user.email.split('@')[0]}
               </p>
+              {selectedProgramName && (
+                <p style={{ margin: '4px 0', fontSize: '11pt' }}>
+                  <strong style={{ fontWeight: 'bold' }}>Programa:</strong> {selectedProgramName}
+                </p>
+              )}
             </div>
 
             {/* Date */}
@@ -105,7 +112,7 @@ export function GradeRecordPreview({
                     Clave
                   </th>
                   <th style={{ border: '1px solid #ddd', padding: '8px 10px', textAlign: 'left', fontWeight: 'bold', fontSize: '10pt' }}>
-                    Nombre asignatura
+                    Programa
                   </th>
                   <th style={{ border: '1px solid #ddd', padding: '8px 10px', textAlign: 'center', fontWeight: 'bold', fontSize: '10pt' }}>
                     Ciclo
@@ -123,10 +130,10 @@ export function GradeRecordPreview({
                   allCourses.map((course, idx) => (
                     <tr key={idx}>
                       <td style={{ border: '1px solid #ddd', padding: '6px 10px', fontSize: '10pt' }}>
-                        {course.courseCode || course.courseShortname}
+                        {formatRecordKey(course.courseCode || course.courseShortname)}
                       </td>
                       <td style={{ border: '1px solid #ddd', padding: '6px 10px', fontSize: '10pt' }}>
-                        {course.courseSubjectName || course.courseName}
+                        {course.materiaName || course.courseSubjectName || course.courseName}
                       </td>
                       <td style={{ border: '1px solid #ddd', padding: '6px 10px', fontSize: '10pt', textAlign: 'center' }}>
                         {course.periodCode || '-'}

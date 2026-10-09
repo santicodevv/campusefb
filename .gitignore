@@ -56,3 +56,14 @@ notas.csv
 reporte_notas_no_importadas.json
 reporte_notas_no_importadas.csv
 resumen_notas_no_importadas.txt
+
+# Exportaciones de datos en la raíz (pueden contener datos de estudiantes)
+/*.sql
+/*.csv
+/*.xls
+/*.xlsx
+/reporte_*.json
+/resumen_*.txt
+
+# Artefacto de Windows (redirección a "nul" desde bash)
+nul

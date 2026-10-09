@@ -346,6 +346,9 @@ export const gradesApi = {
         courseShortname: string;
         courseCode: string | null;
         courseSubjectName: string | null;
+        programMoodleId?: number | null;
+        programName?: string | null;
+        materiaName?: string | null;
         totalGrade: number | null;
         comment: string | null;
         gradeItems: {

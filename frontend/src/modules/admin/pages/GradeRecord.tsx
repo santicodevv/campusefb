@@ -21,6 +21,10 @@ export default function AdminGradeRecord() {
     userGrades,
     gradesLoading,
     allCourses,
+    programOptions,
+    selectedProgramId,
+    setSelectedProgramId,
+    selectedProgram,
     handleSelectUser,
     handlePrint,
     today,
@@ -48,12 +52,16 @@ export default function AdminGradeRecord() {
             setShowSearch={setShowSearch}
             handlePrint={handlePrint}
             gradesLoading={gradesLoading}
+            programOptions={programOptions}
+            selectedProgramId={selectedProgramId}
+            setSelectedProgramId={setSelectedProgramId}
           />
 
           <GradeRecordPreview
             gradesLoading={gradesLoading}
             userGrades={userGrades}
             allCourses={allCourses}
+            selectedProgramName={selectedProgram?.name ?? null}
             handlePrint={handlePrint}
             printRef={printRef}
             today={today}

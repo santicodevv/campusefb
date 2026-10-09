@@ -27,6 +27,9 @@ export interface UserGradesData {
       courseShortname: string;
       courseCode: string | null;
       courseSubjectName: string | null;
+      programMoodleId?: number | null;
+      programName?: string | null;
+      materiaName?: string | null;
       totalGrade: number | null;
       comment: string | null;
       sumGrade: number;
@@ -50,6 +53,9 @@ export interface CourseWithPeriod {
   courseShortname: string;
   courseCode: string | null;
   courseSubjectName: string | null;
+  programMoodleId?: number | null;
+  programName?: string | null;
+  materiaName?: string | null;
   totalGrade: number | null;
   comment: string | null;
   gradeItems: {
@@ -87,6 +93,21 @@ export function generateDocNumber(): string {
   return `EFB - ${seq}`;
 }
 
+/**
+ * Recorta la clave del curso quitando el sufijo del período, ya que el ciclo
+ * se muestra en su propia columna. Ej: "TRCB01_2025-3" -> "TRCB01".
+ */
+export function formatRecordKey(code: string | null | undefined): string {
+  if (!code) return '';
+  const idx = code.indexOf('_');
+  return idx > 0 ? code.substring(0, idx) : code;
+}
+
+export interface ProgramOption {
+  moodleId: number;
+  name: string;
+}
+
 export function useAdminGradeRecord() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
@@ -106,7 +127,7 @@ export function useAdminGradeRecord() {
     enabled: !!selectedUserId,
   });
 
-  const allCourses = useMemo((): CourseWithPeriod[] => {
+  const allCoursesUnfiltered = useMemo((): CourseWithPeriod[] => {
     if (!userGrades?.periods) return [];
     return userGrades.periods.flatMap((period) =>
       period.courses.map((course) => ({
@@ -118,8 +139,35 @@ export function useAdminGradeRecord() {
     );
   }, [userGrades]);
 
+  // Programas (DIPLOMATURA, TECNICATURA, ...) en los que el estudiante tiene cursos
+  const programOptions = useMemo((): ProgramOption[] => {
+    const map = new Map<number, string>();
+    for (const c of allCoursesUnfiltered) {
+      if (c.programMoodleId != null && c.programName) {
+        map.set(c.programMoodleId, c.programName);
+      }
+    }
+    return [...map.entries()]
+      .map(([moodleId, name]) => ({ moodleId, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [allCoursesUnfiltered]);
+
+  const [selectedProgramId, setSelectedProgramId] = useState<number | null>(null);
+
+  const selectedProgram = useMemo(
+    () => programOptions.find((p) => p.moodleId === selectedProgramId) ?? null,
+    [programOptions, selectedProgramId]
+  );
+
+  // Cursos del record: si hay programa seleccionado, solo los de ese programa
+  const allCourses = useMemo((): CourseWithPeriod[] => {
+    if (selectedProgramId == null) return allCoursesUnfiltered;
+    return allCoursesUnfiltered.filter((c) => c.programMoodleId === selectedProgramId);
+  }, [allCoursesUnfiltered, selectedProgramId]);
+
   const handleSelectUser = (user: UserSearchResult) => {
     setSelectedUserId(user.id);
+    setSelectedProgramId(null);
     setShowSearch(false);
     setSearchQuery('');
   };
@@ -300,6 +348,10 @@ export function useAdminGradeRecord() {
     userGrades,
     gradesLoading,
     allCourses,
+    programOptions,
+    selectedProgramId,
+    setSelectedProgramId,
+    selectedProgram,
     handleSelectUser,
     handlePrint,
     today,

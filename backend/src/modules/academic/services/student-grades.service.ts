@@ -879,6 +879,9 @@ export class StudentGradesService {
         courseShortname: string;
         courseCode: string | null;
         courseSubjectName: string | null;
+        programMoodleId: number | null;
+        programName: string | null;
+        materiaName: string | null;
         totalGrade: number | null;
         comment: string | null;
         gradeItems: {
@@ -927,6 +930,62 @@ export class StudentGradesService {
       where: { moodleId: In(courseMoodleIds) },
     });
     const courseMap = new Map(courses.map((c) => [c.moodleId, c]));
+
+    // Jerarquía de categorías de cada curso:
+    // Programa (depth 2, ej. DIPLOMATURA) > Materia (depth 3, ej. HOMILECTICA).
+    const hierarchyRows: {
+      course_moodle_id: string;
+      cat_moodle_id: string;
+      cat_name: string;
+      cat_depth: number;
+    }[] = await this.courseRepository.manager.query(
+      `WITH RECURSIVE chain AS (
+         SELECT c.moodle_id AS course_moodle_id,
+                mc.moodle_id AS cat_moodle_id,
+                mc.name AS cat_name,
+                mc.parent AS cat_parent,
+                mc.depth AS cat_depth
+         FROM moodle_courses c
+         JOIN moodle_categories mc ON mc.moodle_id = c.category_id
+         WHERE c.moodle_id = ANY($1::bigint[])
+         UNION ALL
+         SELECT ch.course_moodle_id,
+                p.moodle_id,
+                p.name,
+                p.parent,
+                p.depth
+         FROM chain ch
+         JOIN moodle_categories p ON p.moodle_id = ch.cat_parent
+         WHERE ch.cat_depth > 2
+       )
+       SELECT course_moodle_id, cat_moodle_id, cat_name, cat_depth
+       FROM chain
+       WHERE cat_depth IN (2, 3)`,
+      [courseMoodleIds],
+    );
+    const hierarchyMap = new Map<
+      number,
+      {
+        programMoodleId: number | null;
+        programName: string | null;
+        materiaName: string | null;
+      }
+    >();
+    for (const row of hierarchyRows) {
+      const key = Number(row.course_moodle_id);
+      const entry = hierarchyMap.get(key) || {
+        programMoodleId: null,
+        programName: null,
+        materiaName: null,
+      };
+      if (Number(row.cat_depth) === 2) {
+        entry.programMoodleId = Number(row.cat_moodle_id);
+        entry.programName = row.cat_name;
+      } else {
+        entry.materiaName = row.cat_name;
+      }
+      hierarchyMap.set(key, entry);
+    }
 
     // Get Moodle grade items for all courses (exclude 'course' type which is the total)
     const allGradeItems = await this.gradeItemRepository.find({
@@ -977,6 +1036,9 @@ export class StudentGradesService {
         courseShortname: string;
         courseCode: string | null;
         courseSubjectName: string | null;
+        programMoodleId: number | null;
+        programName: string | null;
+        materiaName: string | null;
         totalGrade: number | null;
         comment: string | null;
         gradeItems: {
@@ -1032,6 +1094,13 @@ export class StudentGradesService {
           courseShortname: grade.courseShortname || course?.shortname || '',
           courseCode: course?.code || null,
           courseSubjectName: course?.subjectName || null,
+          programMoodleId:
+            hierarchyMap.get(Number(grade.courseMoodleId))?.programMoodleId ??
+            null,
+          programName:
+            hierarchyMap.get(Number(grade.courseMoodleId))?.programName ?? null,
+          materiaName:
+            hierarchyMap.get(Number(grade.courseMoodleId))?.materiaName ?? null,
           totalGrade: grade.totalGrade ?? null,
           comment: grade.comment ?? null,
           gradeItems,
