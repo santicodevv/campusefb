@@ -316,6 +316,7 @@ export class ProjectionController {
 
   @Get('student-grades-matrix')
   async getStudentGradesMatrix(
+    @Res({ passthrough: true }) res: Response,
     @Query('categoryMoodleId') categoryMoodleId?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -326,16 +327,40 @@ export class ProjectionController {
       new ParseEnumPipe(ProgramCompletionStatus),
     )
     completionStatus: ProgramCompletionStatus = ProgramCompletionStatus.ALL,
+    @Query('format') format?: string,
   ) {
     if (!categoryMoodleId) {
-      return { courses: [], students: [], total: 0, page: 1, limit: 10 };
+      return {
+        courses: [],
+        students: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalSubprograms: 0,
+        selectionName: '',
+      };
     }
-    return this.projectionService.getStudentGradesMatrix(
+    const matrix = await this.projectionService.getStudentGradesMatrix(
       parseInt(categoryMoodleId, 10),
       page ? Math.max(1, parseInt(page, 10)) : 1,
       limit ? Math.min(100, Math.max(1, parseInt(limit, 10))) : 10,
       search,
       completionStatus,
+      format !== 'excel',
     );
+    if (format === 'excel') {
+      const buffer = await this.excelService.generateStudentGradesMatrixExcel(
+        matrix,
+        completionStatus,
+        search,
+      );
+      res.set({
+        'Content-Type': EXCEL_CONTENT_TYPE,
+        'Content-Disposition':
+          'attachment; filename="demanda_estudiantes.xlsx"',
+      });
+      return res.send(buffer);
+    }
+    return matrix;
   }
 }

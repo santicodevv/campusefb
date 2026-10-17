@@ -199,6 +199,8 @@ export interface GradeMatrixStudent {
 export type ProgramCompletionStatus = 'all' | 'completed' | 'pending';
 
 export interface StudentGradesMatrix {
+  totalSubprograms: number;
+  selectionName: string;
   courses: GradeMatrixCourse[];
   students: GradeMatrixStudent[];
   total: number;

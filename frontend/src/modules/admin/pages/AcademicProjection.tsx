@@ -1065,12 +1065,18 @@ function DemandBySubjectTab() {
             />
           </div>
         </ProgramSubprogramSelector>
+        {selectedMoodleId && (
+          <ExportExcelButton
+            onExport={() => projectionApi.exportStudentGradesMatrix(selectedMoodleId, search || undefined, completionStatus)}
+            filename={`demanda_estudiantes_${completionStatus}.xlsx`}
+          />
+        )}
       </div>
 
       <p className="text-xs text-gray-500 mb-4">
-        Se cuenta como cursado cada curso con nota final de 70 o más. Completados incluye a quienes
-        aprobaron todos los cursos del programa o subprograma seleccionado; pendientes incluye a quienes
-        tienen cursos sin nota o con nota menor de 70.
+        Cada subprograma cuenta una sola vez al aprobar uno de sus cursos con nota de 70 o más.
+        Completados incluye a quienes aprobaron todos los subprogramas de la selección;
+        pendientes incluye a quienes les falta al menos uno. Excel descarga todos los resultados filtrados.
       </p>
 
       {!selectedMoodleId && <EmptyState message="Selecciona un programa para ver las notas" />}
@@ -1126,7 +1132,7 @@ function DemandBySubjectTab() {
                         {student.suspended ? ' (inactivo)' : ''}
                       </td>
                       <td className="px-3 py-3 text-center whitespace-nowrap font-semibold text-indigo-700 bg-indigo-50/60">
-                        {student.completedCourseCount}
+                        {student.completedCourseCount} / {data?.totalSubprograms ?? 0}
                       </td>
                       {courses.map((course) => {
                         const grade = student.grades[course.id];

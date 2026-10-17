@@ -214,4 +214,12 @@ export const projectionApi = {
     });
     return response.data;
   },
+
+  async exportStudentGradesMatrix(categoryMoodleId: number, search?: string, completionStatus: ProgramCompletionStatus = 'all'): Promise<Blob> {
+    const response = await api.get('/academic-projection/student-grades-matrix', {
+      params: { categoryMoodleId, search, completionStatus, format: 'excel' },
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };

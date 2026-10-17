@@ -1118,7 +1118,7 @@ export class ProjectionService {
    * - Filas: estudiantes con enrolamiento 'student' en alguno de esos cursos,
    *   paginados.
    * - Celdas: última nota final manual no nula; null si no tiene nota.
-   * - Completado: todos los cursos de la selección aprobados con 70 o más.
+   * - Completado: al menos un curso aprobado (70+) en cada subprograma.
    */
   async getStudentGradesMatrix(
     categoryMoodleId: number,
@@ -1126,6 +1126,7 @@ export class ProjectionService {
     limit: number = 10,
     search?: string,
     completionStatus: ProgramCompletionStatus = ProgramCompletionStatus.ALL,
+    paginate: boolean = true,
   ): Promise<{
     courses: { id: number; shortname: string | null; name: string }[];
     students: {
@@ -1138,6 +1139,8 @@ export class ProjectionService {
     total: number;
     page: number;
     limit: number;
+    totalSubprograms: number;
+    selectionName: string;
   }> {
     // Cursos del subprograma (incluye materias/subcategorías)
     const allCategories = await this.moodleCategoryRepository.find();
@@ -1147,12 +1150,34 @@ export class ProjectionService {
     );
     const categoryIds = [categoryMoodleId, ...childCategoryIds];
 
+    const selection = allCategories.find(c => Number(c.moodleId) === categoryMoodleId);
+    const subprograms = Number(selection?.parent) === 0
+      ? allCategories.filter(c => Number(c.parent) === categoryMoodleId)
+      : [];
+    // Al seleccionar un subprograma, todas sus ediciones equivalen a una unidad.
+    const requiredSubprograms = subprograms.length > 0 ? subprograms : selection ? [selection] : [];
+    const totalSubprograms = requiredSubprograms.length;
+    const selectionName = selection?.name.trim() || `Categoría ${categoryMoodleId}`;
+    const subprogramByCategory = new Map<number, number>();
+    for (const subprogram of requiredSubprograms) {
+      const id = Number(subprogram.moodleId);
+      for (const categoryId of [id, ...this.getChildCategoryIds(id, allCategories)]) {
+        subprogramByCategory.set(categoryId, id);
+      }
+    }
+
     const courses = await this.courseRepository.find({
       where: categoryIds.map((catId) => ({ categoryId: catId })),
     });
 
     if (courses.length === 0) {
-      return { courses: [], students: [], total: 0, page, limit };
+      return { courses: [], students: [], total: 0, page, limit, totalSubprograms, selectionName };
+    }
+
+    const subprogramByCourse = new Map<number, number>();
+    for (const course of courses) {
+      const subprogramId = subprogramByCategory.get(Number(course.categoryId));
+      if (subprogramId != null) subprogramByCourse.set(Number(course.moodleId), subprogramId);
     }
 
     // Columnas ordenadas agrupadas por materia y luego por nombre
@@ -1190,7 +1215,8 @@ export class ProjectionService {
       )
       .orderBy('mu.suspended', 'ASC')
       .addOrderBy('mu.firstname', 'ASC')
-      .addOrderBy('mu.lastname', 'ASC');
+      .addOrderBy('mu.lastname', 'ASC')
+      .addOrderBy('mu.moodleId', 'ASC');
 
     // Buscar cada palabra en el nombre completo antes de contar y paginar.
     const searchWords = search?.trim().split(/\s+/).filter(Boolean) ?? [];
@@ -1207,8 +1233,8 @@ export class ProjectionService {
     // antes del conteo y la paginación para incluir todas las páginas.
     if (completionStatus !== ProgramCompletionStatus.ALL) {
       const approvedCount = `(
-        SELECT COUNT(*) FROM (
-          SELECT DISTINCT ON (g.course_moodle_id) g.total_grade
+        SELECT COUNT(DISTINCT mapping.subprogram_id) FROM (
+          SELECT DISTINCT ON (g.course_moodle_id) g.course_moodle_id, g.total_grade
           FROM course_student_grades g
           JOIN app_users au ON au.id = g.student_id
           WHERE au.moodle_user_id = mu.moodle_id
@@ -1216,19 +1242,26 @@ export class ProjectionService {
             AND g.total_grade IS NOT NULL
           ORDER BY g.course_moodle_id, g.updated_at DESC, g.id DESC
         ) latest_grades
+        JOIN unnest(CAST(:groupCourseIds AS bigint[]), CAST(:groupSubprogramIds AS bigint[]))
+          AS mapping(course_id, subprogram_id) ON mapping.course_id = latest_grades.course_moodle_id
         WHERE latest_grades.total_grade >= :passingGrade
       )`;
       studentsQb.andWhere(
-        `${approvedCount} ${completionStatus === ProgramCompletionStatus.COMPLETED ? '=' : '<'} :requiredCourses`,
-        { passingGrade: PASSING_GRADE, requiredCourses: courseMoodleIds.length },
+        totalSubprograms === 0
+          ? (completionStatus === ProgramCompletionStatus.COMPLETED ? 'FALSE' : 'TRUE')
+          : `${approvedCount} ${completionStatus === ProgramCompletionStatus.COMPLETED ? '=' : '<'} :requiredSubprograms`,
+        {
+          passingGrade: PASSING_GRADE,
+          requiredSubprograms: totalSubprograms,
+          groupCourseIds: [...subprogramByCourse.keys()],
+          groupSubprogramIds: [...subprogramByCourse.values()],
+        },
       );
     }
 
     const total = await studentsQb.getCount();
-    const users = await studentsQb
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getMany();
+    if (paginate) studentsQb.skip((page - 1) * limit).take(limit);
+    const users = await studentsQb.getMany();
 
     // Notas finales propias: totalGrade de course_student_grades (asignada por el profesor).
     // Se ignora la nota calculada de Moodle. Sin nota manual -> celda vacía.
@@ -1273,6 +1306,11 @@ export class ProjectionService {
       for (const course of courseColumns) {
         grades[course.id] = gradeMap.get(`${uid}:${course.id}`) ?? null;
       }
+      const approvedSubprograms = new Set<number>();
+      for (const [courseId, subprogramId] of subprogramByCourse) {
+        const grade = grades[courseId];
+        if (grade !== null && grade >= PASSING_GRADE) approvedSubprograms.add(subprogramId);
+      }
       return {
         moodleId: uid,
         name:
@@ -1281,13 +1319,11 @@ export class ProjectionService {
           `User ${u.moodleId}`,
         suspended: u.suspended,
         grades,
-        completedCourseCount: Object.values(grades).filter(
-          (grade) => grade !== null && grade >= PASSING_GRADE,
-        ).length,
+        completedCourseCount: approvedSubprograms.size,
       };
     });
 
-    return { courses: courseColumns, students, total, page, limit };
+    return { courses: courseColumns, students, total, page, limit: paginate ? limit : total, totalSubprograms, selectionName };
   }
 
   /**
