@@ -23,6 +23,9 @@ import { UpdateAcademicProgramDto } from './dto/update-academic-program.dto';
 import { CreateStudyPlanDto } from './dto/create-study-plan.dto';
 import { CreateProgramCourseDto } from './dto/create-program-course.dto';
 import { AssignStudentProgramDto } from './dto/assign-student-program.dto';
+import { ProgramCompletionStatus } from './dto/program-completion-status';
+
+const PASSING_GRADE = 70;
 
 @Injectable()
 export class ProjectionService {
@@ -1114,14 +1117,15 @@ export class ProjectionService {
    *   ordenados por materia y nombre.
    * - Filas: estudiantes con enrolamiento 'student' en alguno de esos cursos,
    *   paginados.
-   * - Celdas: nota total del curso (grade item tipo 'course'); null si el
-   *   estudiante no tiene nota en ese curso.
+   * - Celdas: última nota final manual no nula; null si no tiene nota.
+   * - Completado: todos los cursos de la selección aprobados con 70 o más.
    */
   async getStudentGradesMatrix(
     categoryMoodleId: number,
     page: number = 1,
     limit: number = 10,
     search?: string,
+    completionStatus: ProgramCompletionStatus = ProgramCompletionStatus.ALL,
   ): Promise<{
     courses: { id: number; shortname: string | null; name: string }[];
     students: {
@@ -1129,6 +1133,7 @@ export class ProjectionService {
       name: string;
       suspended: boolean;
       grades: Record<number, number | null>;
+      completedCourseCount: number;
     }[];
     total: number;
     page: number;
@@ -1198,6 +1203,27 @@ export class ProjectionService {
       );
     });
 
+    // Usar la misma nota más reciente que se muestra en cada celda. Filtrar
+    // antes del conteo y la paginación para incluir todas las páginas.
+    if (completionStatus !== ProgramCompletionStatus.ALL) {
+      const approvedCount = `(
+        SELECT COUNT(*) FROM (
+          SELECT DISTINCT ON (g.course_moodle_id) g.total_grade
+          FROM course_student_grades g
+          JOIN app_users au ON au.id = g.student_id
+          WHERE au.moodle_user_id = mu.moodle_id
+            AND g.course_moodle_id IN (:...courseIds)
+            AND g.total_grade IS NOT NULL
+          ORDER BY g.course_moodle_id, g.updated_at DESC, g.id DESC
+        ) latest_grades
+        WHERE latest_grades.total_grade >= :passingGrade
+      )`;
+      studentsQb.andWhere(
+        `${approvedCount} ${completionStatus === ProgramCompletionStatus.COMPLETED ? '=' : '<'} :requiredCourses`,
+        { passingGrade: PASSING_GRADE, requiredCourses: courseMoodleIds.length },
+      );
+    }
+
     const total = await studentsQb.getCount();
     const users = await studentsQb
       .skip((page - 1) * limit)
@@ -1227,7 +1253,7 @@ export class ProjectionService {
             courseMoodleId: In(courseMoodleIds),
             totalGrade: Not(IsNull()),
           },
-          order: { updatedAt: 'DESC' },
+          order: { updatedAt: 'DESC', id: 'DESC' },
         });
 
         for (const g of grades) {
@@ -1255,6 +1281,9 @@ export class ProjectionService {
           `User ${u.moodleId}`,
         suspended: u.suspended,
         grades,
+        completedCourseCount: Object.values(grades).filter(
+          (grade) => grade !== null && grade >= PASSING_GRADE,
+        ).length,
       };
     });
 

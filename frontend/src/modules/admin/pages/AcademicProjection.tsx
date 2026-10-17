@@ -10,7 +10,7 @@ import Button from '@/shared/components/ui/Button';
 import { projectionApi } from '../api/projection.api';
 import { coursesApi } from '../api/courses.api';
 import { CreateCourseForm } from '../components/courses/CreateCourseForm';
-import type { AcademicProgram, CategoryHierarchyNode } from '../types/projection.types';
+import type { AcademicProgram, CategoryHierarchyNode, ProgramCompletionStatus } from '../types/projection.types';
 
 const TABS = [
   { id: 'programs', label: 'Programas' },
@@ -984,6 +984,7 @@ function DemandBySubjectTab() {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
+  const [completionStatus, setCompletionStatus] = useState<ProgramCompletionStatus>('all');
   const PAGE_SIZE = 10;
 
   React.useEffect(() => {
@@ -1005,8 +1006,8 @@ function DemandBySubjectTab() {
   }, [hierarchy, rootMoodleId]);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['student-grades-matrix', selectedMoodleId, page, search],
-    queryFn: () => projectionApi.getStudentGradesMatrix(selectedMoodleId!, page, PAGE_SIZE, search || undefined),
+    queryKey: ['student-grades-matrix', selectedMoodleId, page, search, completionStatus],
+    queryFn: () => projectionApi.getStudentGradesMatrix(selectedMoodleId!, page, PAGE_SIZE, search || undefined, completionStatus),
     enabled: !!selectedMoodleId,
   });
 
@@ -1031,6 +1032,23 @@ function DemandBySubjectTab() {
           subprogramMoodleId={subprogramMoodleId}
           onChange={handleSelectionChange}
         >
+          <label htmlFor="demand-completion-status" className="text-sm font-medium text-gray-700">
+            Estado de la selección:
+          </label>
+          <select
+            id="demand-completion-status"
+            value={completionStatus}
+            disabled={!selectedMoodleId}
+            onChange={(event) => {
+              setCompletionStatus(event.target.value as ProgramCompletionStatus);
+              setPage(1);
+            }}
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+          >
+            <option value="all">Todos</option>
+            <option value="completed">Completados</option>
+            <option value="pending">Pendientes</option>
+          </select>
           <label htmlFor="demand-student-search" className="text-sm font-medium text-gray-700">
             Buscar estudiante:
           </label>
@@ -1049,6 +1067,12 @@ function DemandBySubjectTab() {
         </ProgramSubprogramSelector>
       </div>
 
+      <p className="text-xs text-gray-500 mb-4">
+        Se cuenta como cursado cada curso con nota final de 70 o más. Completados incluye a quienes
+        aprobaron todos los cursos del programa o subprograma seleccionado; pendientes incluye a quienes
+        tienen cursos sin nota o con nota menor de 70.
+      </p>
+
       {!selectedMoodleId && <EmptyState message="Selecciona un programa para ver las notas" />}
 
       {isLoading && <LoadingSpinner />}
@@ -1063,6 +1087,9 @@ function DemandBySubjectTab() {
                   <th className="sticky left-0 z-10 bg-gray-50 text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">
                     Estudiante
                   </th>
+                  <th className="text-center px-3 py-3 font-medium text-gray-600 whitespace-nowrap bg-indigo-50">
+                    Total Cursos Cursados
+                  </th>
                   {courses.map((course) => (
                     <th
                       key={course.id}
@@ -1073,9 +1100,6 @@ function DemandBySubjectTab() {
                         (course.name.length > 12 ? `${course.name.slice(0, 12)}…` : course.name)}
                     </th>
                   ))}
-                  <th className="text-center px-3 py-3 font-medium text-gray-600 whitespace-nowrap bg-indigo-50">
-                    Total Cursos Cursados
-                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -1084,7 +1108,9 @@ function DemandBySubjectTab() {
                     <td colSpan={courses.length + 2} className="px-4 py-8 text-center text-gray-500">
                       {search
                         ? 'No hay estudiantes que coincidan con la búsqueda en esta selección'
-                        : 'No hay estudiantes enrolados en los cursos de esta selección'}
+                        : completionStatus !== 'all'
+                          ? 'No hay estudiantes con el estado seleccionado'
+                          : 'No hay estudiantes enrolados en los cursos de esta selección'}
                     </td>
                   </tr>
                 ) : (
@@ -1098,6 +1124,9 @@ function DemandBySubjectTab() {
                       >
                         {student.name}
                         {student.suspended ? ' (inactivo)' : ''}
+                      </td>
+                      <td className="px-3 py-3 text-center whitespace-nowrap font-semibold text-indigo-700 bg-indigo-50/60">
+                        {student.completedCourseCount}
                       </td>
                       {courses.map((course) => {
                         const grade = student.grades[course.id];
@@ -1117,9 +1146,6 @@ function DemandBySubjectTab() {
                           </td>
                         );
                       })}
-                      <td className="px-3 py-3 text-center whitespace-nowrap font-semibold text-indigo-700 bg-indigo-50/60">
-                        {courses.filter((course) => student.grades[course.id] != null).length}
-                      </td>
                     </tr>
                   ))
                 )}

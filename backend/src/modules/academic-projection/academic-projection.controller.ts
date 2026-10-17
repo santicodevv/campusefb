@@ -8,6 +8,8 @@ import {
   Param,
   Query,
   ParseIntPipe,
+  DefaultValuePipe,
+  ParseEnumPipe,
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
@@ -18,6 +20,7 @@ import { UpdateAcademicProgramDto } from './dto/update-academic-program.dto';
 import { CreateStudyPlanDto } from './dto/create-study-plan.dto';
 import { CreateProgramCourseDto } from './dto/create-program-course.dto';
 import { AssignStudentProgramDto } from './dto/assign-student-program.dto';
+import { ProgramCompletionStatus } from './dto/program-completion-status';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RoleCode } from '../users/entities/role.entity';
 
@@ -317,6 +320,12 @@ export class ProjectionController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
+    @Query(
+      'completionStatus',
+      new DefaultValuePipe(ProgramCompletionStatus.ALL),
+      new ParseEnumPipe(ProgramCompletionStatus),
+    )
+    completionStatus: ProgramCompletionStatus = ProgramCompletionStatus.ALL,
   ) {
     if (!categoryMoodleId) {
       return { courses: [], students: [], total: 0, page: 1, limit: 10 };
@@ -326,6 +335,7 @@ export class ProjectionController {
       page ? Math.max(1, parseInt(page, 10)) : 1,
       limit ? Math.min(100, Math.max(1, parseInt(limit, 10))) : 10,
       search,
+      completionStatus,
     );
   }
 }

@@ -20,6 +20,7 @@ import type {
   CategoryHierarchyNode,
   PagedStudentGrades,
   StudentGradesMatrix,
+  ProgramCompletionStatus,
   StudyPlanMateria,
   StudyPlansByCategory,
 } from '../types/projection.types';
@@ -207,9 +208,9 @@ export const projectionApi = {
     return response.data;
   },
 
-  async getStudentGradesMatrix(categoryMoodleId: number, page: number = 1, limit: number = 10, search?: string): Promise<StudentGradesMatrix> {
+  async getStudentGradesMatrix(categoryMoodleId: number, page: number = 1, limit: number = 10, search?: string, completionStatus: ProgramCompletionStatus = 'all'): Promise<StudentGradesMatrix> {
     const response = await api.get<StudentGradesMatrix>('/academic-projection/student-grades-matrix', {
-      params: { categoryMoodleId, page, limit, search },
+      params: { categoryMoodleId, page, limit, search, completionStatus },
     });
     return response.data;
   },
