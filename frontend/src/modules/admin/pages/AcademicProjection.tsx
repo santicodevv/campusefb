@@ -1094,7 +1094,7 @@ function DemandBySubjectTab() {
                     Estudiante
                   </th>
                   <th className="text-center px-3 py-3 font-medium text-gray-600 whitespace-nowrap bg-indigo-50">
-                    Total Cursos Cursados
+                    Avance del programa
                   </th>
                   {courses.map((course) => (
                     <th
@@ -1132,7 +1132,9 @@ function DemandBySubjectTab() {
                         {student.suspended ? ' (inactivo)' : ''}
                       </td>
                       <td className="px-3 py-3 text-center whitespace-nowrap font-semibold text-indigo-700 bg-indigo-50/60">
-                        {student.completedCourseCount} / {data?.totalSubprograms ?? 0}
+                        {data?.totalSubprograms
+                          ? Math.round((student.completedCourseCount / data.totalSubprograms) * 100)
+                          : 0}%
                       </td>
                       {courses.map((course) => {
                         const grade = student.grades[course.id];

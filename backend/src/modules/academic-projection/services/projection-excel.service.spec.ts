@@ -44,8 +44,10 @@ describe('Projection Excel student records', () => {
     const sheet = workbook.worksheets[0];
     expect(sheet.getCell('A1').value).toContain('Consejería');
     expect(sheet.getCell('A2').value).toContain('Búsqueda: Estudiante');
-    expect(sheet.getCell('B4').value).toBe('Total Cursos Cursados');
-    expect(sheet.getCell('B5').value).toBe(4);
+    expect(sheet.getCell('B4').value).toBe('Avance del programa');
+    expect(sheet.getCell('B5').value).toBe(1);
+    expect(sheet.getCell('B6').value).toBe(0.75);
+    expect(sheet.getCell('B5').numFmt).toBe('0%');
     expect(sheet.getCell('D5').value).toBe('Completado');
     expect(sheet.getCell('D6').value).toBe('Pendiente');
     expect(sheet.getCell('E5').value).toBe(70);

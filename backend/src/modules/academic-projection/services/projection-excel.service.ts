@@ -51,7 +51,7 @@ export class ProjectionExcelService {
     this.styledHeader(
       sheet.addRow([
         'Estudiante',
-        'Total Cursos Cursados',
+        'Avance del programa',
         'Subprogramas requeridos',
         'Estado',
         ...matrix.courses.map((c) =>
@@ -64,7 +64,9 @@ export class ProjectionExcelService {
     for (const student of matrix.students) {
       sheet.addRow([
         student.name + (student.suspended ? ' (inactivo)' : ''),
-        student.completedCourseCount,
+        matrix.totalSubprograms > 0
+          ? student.completedCourseCount / matrix.totalSubprograms
+          : 0,
         matrix.totalSubprograms,
         matrix.totalSubprograms > 0 &&
         student.completedCourseCount === matrix.totalSubprograms
@@ -75,6 +77,7 @@ export class ProjectionExcelService {
     }
     sheet.getColumn(1).width = 38;
     sheet.getColumn(2).width = 22;
+    sheet.getColumn(2).numFmt = '0%';
     sheet.getColumn(3).width = 24;
     sheet.getColumn(4).width = 16;
     for (let col = 5; col <= matrix.courses.length + 4; col++) {
