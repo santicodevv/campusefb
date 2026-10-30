@@ -1,0 +1,26 @@
+name: Jira
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  jira-key:
+    name: Ticket de Jira
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar clave EFB-<n> en rama o título
+        env:
+          BRANCH: ${{ github.head_ref }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+          if printf '%s\n%s\n' "$BRANCH" "$TITLE" | grep -qE '\bEFB-[0-9]+\b'; then
+            key=$(printf '%s\n%s\n' "$BRANCH" "$TITLE" | grep -oE '\bEFB-[0-9]+\b' | head -1)
+            echo "OK - PR vinculado a $key"
+            exit 0
+          fi
+          echo "::error::El PR no referencia un ticket de Jira."
+          echo "Usá una rama como feature/EFB-12-reporte-pdf o un título como 'feat(reportes): EFB-12 exportar PDF'."
+          exit 1

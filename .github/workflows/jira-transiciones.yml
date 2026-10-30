@@ -1,0 +1,116 @@
+name: Jira transiciones
+
+# Mueve los tickets EFB-<n> referenciados en la rama o el título del PR:
+#   PR abierto/reabierto/listo para revisión -> "En revisión" (o "En curso" si no existe)
+#   PR mergeado                              -> "Listo" + comentario con el link del PR
+# Requiere los secretos JIRA_USER_EMAIL y JIRA_API_TOKEN; sin ellos el job se omite.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, ready_for_review, closed]
+
+concurrency:
+  group: jira-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  transicion:
+    name: Mover tickets en Jira
+    if: github.event.action != 'closed' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    env:
+      JIRA_SITE_URL: https://welin1924-1793141597420.atlassian.net
+      # Los API tokens con alcances (scoped) solo funcionan vía el gateway de Atlassian.
+      JIRA_GATEWAY_URL: https://api.atlassian.com/ex/jira/458f8beb-c5e4-4dcb-bb26-53dd22dec8d3
+      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+      BRANCH: ${{ github.head_ref }}
+      TITLE: ${{ github.event.pull_request.title }}
+      PR_URL: ${{ github.event.pull_request.html_url }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      MERGED: ${{ github.event.pull_request.merged }}
+    steps:
+      - name: Transicionar tickets
+        run: |
+          set -euo pipefail
+
+          if [ -z "$JIRA_USER_EMAIL" ] || [ -z "$JIRA_API_TOKEN" ]; then
+            echo "::warning::Faltan los secretos JIRA_USER_EMAIL / JIRA_API_TOKEN; no se mueven tickets."
+            exit 0
+          fi
+
+          keys=$(printf '%s\n%s\n' "$BRANCH" "$TITLE" | grep -oE '\bEFB-[0-9]+\b' | sort -u || true)
+          if [ -z "$keys" ]; then
+            echo "Sin tickets EFB-<n> en rama ni título."
+            exit 0
+          fi
+
+          if [ "$MERGED" = "true" ]; then
+            targets="Listo"
+          else
+            targets="En revisión|En curso"
+          fi
+
+          jira() {
+            curl -sS --fail-with-body -u "$JIRA_USER_EMAIL:$JIRA_API_TOKEN" \
+              -H 'Accept: application/json' -H 'Content-Type: application/json' "$@"
+          }
+
+          # Con credenciales inválidas Jira responde como anónimo (404 en los tickets),
+          # así que se validan antes para dar un error claro. Se prueba primero la URL
+          # del sitio (tokens clásicos) y luego el gateway (tokens con alcances).
+          me="${RUNNER_TEMP:-/tmp}/jira-me.json"
+          JIRA_BASE_URL=""
+          for base in "$JIRA_SITE_URL" "$JIRA_GATEWAY_URL"; do
+            code=$(curl -sS -o "$me" -w '%{http_code}' -u "$JIRA_USER_EMAIL:$JIRA_API_TOKEN" \
+              -H 'Accept: application/json' "$base/rest/api/3/myself" || echo 000)
+            echo "Autenticación en $base -> HTTP $code"
+            if [ "$code" = "200" ] && [ -n "$(jq -r '.accountId // empty' "$me")" ]; then
+              JIRA_BASE_URL="$base"
+              break
+            fi
+          done
+          if [ -z "$JIRA_BASE_URL" ]; then
+            echo "::error::Credenciales de Jira inválidas: revisá que JIRA_USER_EMAIL sea el email de la cuenta Atlassian dueña de JIRA_API_TOKEN y que el token no esté revocado (si es un token con alcances, debe incluir read:jira-work y write:jira-work)."
+            exit 1
+          fi
+          echo "Autenticado en Jira como $(jq -r '.displayName' "$me") vía $JIRA_BASE_URL"
+
+          for key in $keys; do
+            transitions=$(jira "$JIRA_BASE_URL/rest/api/3/issue/$key/transitions") || {
+              echo "::warning::No se pudo leer $key (¿existe?)."
+              continue
+            }
+
+            current=$(jira "$JIRA_BASE_URL/rest/api/3/issue/$key?fields=status" | jq -r '.fields.status.name')
+
+            # Primer estado destino disponible, en orden de preferencia.
+            target="" ; tid=""
+            IFS='|' read -ra options <<< "$targets"
+            for name in "${options[@]}"; do
+              tid=$(jq -r --arg n "$name" '.transitions[] | select(.to.name == $n) | .id' <<< "$transitions" | head -1)
+              if [ -n "$tid" ]; then target="$name"; break; fi
+            done
+
+            if [ "$current" = "Listo" ] || [ "$current" = "$target" ]; then
+              echo "$key ya está en \"$current\"."
+            elif [ -z "$tid" ]; then
+              echo "::warning::$key: no hay transición a \"$targets\" desde \"$current\"."
+            else
+              jira -X POST "$JIRA_BASE_URL/rest/api/3/issue/$key/transitions" \
+                -d "$(jq -n --arg id "$tid" '{transition: {id: $id}}')" > /dev/null
+              echo "$key: \"$current\" -> \"$target\""
+            fi
+
+            if [ "$MERGED" = "true" ]; then
+              body=$(jq -n --arg url "$PR_URL" --arg n "#$PR_NUMBER" '{
+                body: {type: "doc", version: 1, content: [{type: "paragraph", content: [
+                  {type: "text", text: "Mergeado a main en el PR "},
+                  {type: "text", text: $n, marks: [{type: "link", attrs: {href: $url}}]}
+                ]}]}
+              }')
+              jira -X POST "$JIRA_BASE_URL/rest/api/3/issue/$key/comment" -d "$body" > /dev/null
+              echo "$key: comentario con el link del PR agregado."
+            fi
+          done
