@@ -24,6 +24,20 @@ export class MicrosoftStrategy extends PassportStrategy(Strategy, 'microsoft') {
       );
     }
 
+    if (configService.get<string>('NODE_ENV') === 'production') {
+      if (!configService.get<string>('ALLOWED_EMAIL_DOMAIN')) {
+        MicrosoftStrategy.logger.error(
+          'ALLOWED_EMAIL_DOMAIN no está definido: se rechazarán todos los logins con Microsoft hasta configurarlo.',
+        );
+      }
+      if (tenant === 'common') {
+        MicrosoftStrategy.logger.warn(
+          'MICROSOFT_TENANT_ID es "common": acepta cuentas de cualquier organización y cuentas personales. ' +
+            'Configure el tenant de la institución.',
+        );
+      }
+    }
+
     super({
       clientID: clientID || 'PLACEHOLDER',
       clientSecret: clientSecret || 'PLACEHOLDER',
@@ -49,10 +63,19 @@ export class MicrosoftStrategy extends PassportStrategy(Strategy, 'microsoft') {
 
     const email = emails[0].value;
 
-    // Obtener el dominio permitido desde las variables de entorno (opcional pero recomendado)
+    // Dominio permitido: obligatorio en producción, opcional en desarrollo
     const allowedDomain = this.configService.get<string>(
       'ALLOWED_EMAIL_DOMAIN',
     );
+
+    if (
+      !allowedDomain &&
+      this.configService.get<string>('NODE_ENV') === 'production'
+    ) {
+      throw new UnauthorizedException(
+        'El login con Microsoft no está disponible: falta configurar el dominio institucional',
+      );
+    }
 
     if (allowedDomain) {
       const emailDomain = email.split('@')[1];
