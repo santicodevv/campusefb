@@ -20,7 +20,7 @@ cd backend && npm run build && npx jest
 cd frontend && npx eslint . && npm run build
 ```
 
-El lint del backend todavía tiene errores heredados (ticket EFB-11): no los mezcles con otros cambios.
+El lint del backend no debe tener errores (`npx eslint "{src,apps,libs,test}/**/*.ts"` en `backend/`, sin `--fix`); los warnings heredados se tratan aparte.
 
 ## Reglas
 

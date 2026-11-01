@@ -222,8 +222,13 @@ export class MoodleClientService {
    * @param categoryId - ID de la categoría en Moodle
    * @param recursive - Si es true, elimina también las subcategorías y cursos
    */
-  async deleteCategory(categoryId: number, recursive: boolean = true): Promise<void> {
-    this.logger.log(`Deleting category ${categoryId} from Moodle (recursive: ${recursive})...`);
+  async deleteCategory(
+    categoryId: number,
+    recursive: boolean = true,
+  ): Promise<void> {
+    this.logger.log(
+      `Deleting category ${categoryId} from Moodle (recursive: ${recursive})...`,
+    );
 
     const result = await this.callFunction('core_course_delete_categories', {
       categories: [
@@ -234,7 +239,9 @@ export class MoodleClientService {
       ],
     });
 
-    this.logger.log(`Moodle delete category response: ${JSON.stringify(result)}`);
+    this.logger.log(
+      `Moodle delete category response: ${JSON.stringify(result)}`,
+    );
 
     // Si hay error, Moodle lanza excepción que será capturada por callFunction
     // Si no hay error, result es null o vacío
