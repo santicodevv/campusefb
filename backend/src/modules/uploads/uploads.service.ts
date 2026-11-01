@@ -132,7 +132,9 @@ export class UploadsService {
     }
 
     if (document.userId !== userId) {
-      throw new ForbiddenException('No tienes permiso para eliminar este documento');
+      throw new ForbiddenException(
+        'No tienes permiso para eliminar este documento',
+      );
     }
 
     // Delete the file

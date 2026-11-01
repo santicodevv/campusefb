@@ -51,16 +51,14 @@ describe('ProjectionService student grades matrix', () => {
       ],
     }).compile();
     service = module.get(ProjectionService);
-    repositories
-      .get('MoodleCategory')!
-      .find.mockResolvedValue([
-        { moodleId: '1', parent: '0', name: 'Programa' },
-        ...[1, 2, 3, 4, 5].map((id) => ({
-          moodleId: String(id + 10),
-          parent: '1',
-          name: `Subprograma ${id}`,
-        })),
-      ]);
+    repositories.get('MoodleCategory')!.find.mockResolvedValue([
+      { moodleId: '1', parent: '0', name: 'Programa' },
+      ...[1, 2, 3, 4, 5].map((id) => ({
+        moodleId: String(id + 10),
+        parent: '1',
+        name: `Subprograma ${id}`,
+      })),
+    ]);
     repositories.get('MoodleCourse')!.find.mockResolvedValue(
       [1, 2, 3, 4, 5].map((id) => ({
         moodleId: String(id),

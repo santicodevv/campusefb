@@ -42,8 +42,12 @@ export class AddUserProfileAndDocuments20260922000000 implements MigrationInterf
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Drop indexes
-    await queryRunner.query(`DROP INDEX IF EXISTS "idx_user_documents_user_type"`);
-    await queryRunner.query(`DROP INDEX IF EXISTS "idx_user_documents_user_id"`);
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS "idx_user_documents_user_type"`,
+    );
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS "idx_user_documents_user_id"`,
+    );
 
     // Drop user_documents table
     await queryRunner.query(`DROP TABLE IF EXISTS "user_documents"`);
