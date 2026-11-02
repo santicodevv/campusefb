@@ -1,9 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient } from 'redis';
 
 @Injectable()
-export class TokenBlacklistService {
+export class TokenBlacklistService implements OnModuleDestroy {
   private readonly logger = new Logger(TokenBlacklistService.name);
   private blacklist = new Set<string>();
   private redisClient: ReturnType<typeof createClient> | null = null;
@@ -49,6 +49,13 @@ export class TokenBlacklistService {
     } catch {
       this.redisAvailable = false;
       this.logger.warn('Redis connection failed, using in-memory blacklist');
+    }
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    // Sin cerrar el cliente el proceso no termina (p. ej. Jest en los e2e).
+    if (this.redisClient?.isOpen) {
+      await this.redisClient.quit();
     }
   }
 
