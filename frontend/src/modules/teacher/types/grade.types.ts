@@ -139,6 +139,7 @@ export interface StudentCourseGrade {
 export interface UpdateStudentGradeDto {
   totalGrade?: number | null;
   comment?: string | null;
+  reason?: string;
 }
 
 // Sync result

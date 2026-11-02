@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { gradesApi } from '@/modules/teacher/api/grades.api';
 import { periodsApi } from '@/modules/admin/api/periods.api';
+import { api } from '@/shared/lib';
 import toast from 'react-hot-toast';
 import type { UpdateStudentGradeDto } from '@/shared/types';
 
@@ -13,6 +14,8 @@ export function useTeacherGrades() {
 
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null);
   const [localEdits, setLocalEdits] = useState<Map<number, UpdateStudentGradeDto>>(new Map());
+  // Estudiante cuya nota ya registrada se está corrigiendo (pide motivo antes de guardar)
+  const [correctionStudentId, setCorrectionStudentId] = useState<number | null>(null);
 
   const { data: periods, isLoading: periodsLoading } = useQuery({
     queryKey: ['periods'],
@@ -32,6 +35,15 @@ export function useTeacherGrades() {
     enabled: !!courseId && !!effectivePeriodId,
   });
 
+  const { data: editSessionStatus } = useQuery<{ isActive: boolean }>({
+    queryKey: ['edit-session-status'],
+    queryFn: async () => {
+      const response = await api.get('/grades/edit-session/status');
+      return response.data;
+    },
+  });
+  const isEditingEnabled = editSessionStatus?.isActive ?? false;
+
   const updateGradeMutation = useMutation({
     mutationFn: async ({ studentId, data }: { studentId: number; data: UpdateStudentGradeDto }) => {
       return gradesApi.updateStudentGrade(Number(courseId), studentId, effectivePeriodId!, data);
@@ -42,6 +54,7 @@ export function useTeacherGrades() {
         newMap.delete(variables.studentId);
         return newMap;
       });
+      setCorrectionStudentId(null);
       queryClient.invalidateQueries({ queryKey: ['teacher-student-grades', courseId, effectivePeriodId] });
       toast.success('Calificacion guardada');
     },
@@ -75,8 +88,22 @@ export function useTeacherGrades() {
   const handleSave = (studentId: number) => {
     const edit = localEdits.get(studentId);
     if (!edit) return;
+    const saved = studentGrades?.find((s) => s.studentId === studentId);
+    if (saved?.totalGrade != null) {
+      setCorrectionStudentId(studentId);
+      return;
+    }
     updateGradeMutation.mutate({ studentId, data: edit });
   };
+
+  const handleConfirmCorrection = (reason: string) => {
+    if (correctionStudentId === null) return;
+    const edit = localEdits.get(correctionStudentId);
+    if (!edit) return;
+    updateGradeMutation.mutate({ studentId: correctionStudentId, data: { ...edit, reason } });
+  };
+
+  const correctionStudent = studentGrades?.find((s) => s.studentId === correctionStudentId) ?? null;
 
   return {
     courseId,
@@ -92,5 +119,10 @@ export function useTeacherGrades() {
     updateGradeMutation,
     handleGradeChange,
     handleSave,
+    isEditingEnabled,
+    correctionStudent,
+    correctionGrade: correctionStudentId !== null ? localEdits.get(correctionStudentId)?.totalGrade : undefined,
+    handleConfirmCorrection,
+    cancelCorrection: () => setCorrectionStudentId(null),
   };
 }
