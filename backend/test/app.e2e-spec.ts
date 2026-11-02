@@ -108,6 +108,7 @@ describe('API (e2e)', () => {
 
       expect(res.body.accessToken).toEqual(expect.any(String));
       expect(res.body.user.email).toBe(seededUser.email);
+      expect(res.body.user).not.toHaveProperty('passwordHash');
 
       const me = await request(app.getHttpServer())
         .get('/api/auth/me')
@@ -115,6 +116,7 @@ describe('API (e2e)', () => {
         .expect(200);
 
       expect(me.body.email).toBe(seededUser.email);
+      expect(me.body).not.toHaveProperty('passwordHash');
       expect(me.body.roles).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ code: RoleCode.STUDENT }),
