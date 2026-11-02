@@ -1,4 +1,11 @@
-import { IsNumber, IsString, IsOptional, Min, Max } from 'class-validator';
+import {
+  IsNumber,
+  IsString,
+  IsOptional,
+  Min,
+  Max,
+  MaxLength,
+} from 'class-validator';
 
 export class UpdateStudentGradeDto {
   @IsNumber()
@@ -10,6 +17,12 @@ export class UpdateStudentGradeDto {
   @IsString()
   @IsOptional()
   comment?: string;
+
+  // Motivo de la corrección: obligatorio para el profesor al modificar una nota ya registrada
+  @IsString()
+  @MaxLength(500)
+  @IsOptional()
+  reason?: string;
 }
 
 export class CreateStudentGradeDto {
