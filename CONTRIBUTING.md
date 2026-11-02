@@ -44,4 +44,4 @@ cd backend && npm run build && npx jest
 cd frontend && npx eslint . && npm run build
 ```
 
-Es lo mismo que corre el CI (`.github/workflows/ci.yml`).
+Es lo mismo que corre el CI (`.github/workflows/ci.yml`). El CI corre además los tests e2e del backend contra Postgres y Redis; cómo correrlos en local con `docker compose` está en [backend/test/README.md](backend/test/README.md).
