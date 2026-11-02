@@ -75,4 +75,13 @@ export class User {
     inverseJoinColumn: { name: 'role_id', referencedColumnName: 'id' },
   })
   roles: Role[];
+
+  // @Exclude solo actúa con ClassSerializerInterceptor, que no se registra global
+  // porque rompe los handlers con @Res(). Esto cubre cualquier respuesta JSON,
+  // incluido un usuario anidado en otro objeto.
+  toJSON(): Omit<User, 'passwordHash' | 'toJSON'> {
+    const json: Partial<User> = { ...this };
+    delete json.passwordHash;
+    return json as Omit<User, 'passwordHash' | 'toJSON'>;
+  }
 }
