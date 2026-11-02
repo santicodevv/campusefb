@@ -1150,18 +1150,26 @@ export class ProjectionService {
     );
     const categoryIds = [categoryMoodleId, ...childCategoryIds];
 
-    const selection = allCategories.find(c => Number(c.moodleId) === categoryMoodleId);
-    const subprograms = Number(selection?.parent) === 0
-      ? allCategories.filter(c => Number(c.parent) === categoryMoodleId)
-      : [];
+    const selection = allCategories.find(
+      (c) => Number(c.moodleId) === categoryMoodleId,
+    );
+    const subprograms =
+      Number(selection?.parent) === 0
+        ? allCategories.filter((c) => Number(c.parent) === categoryMoodleId)
+        : [];
     // Al seleccionar un subprograma, todas sus ediciones equivalen a una unidad.
-    const requiredSubprograms = subprograms.length > 0 ? subprograms : selection ? [selection] : [];
+    const requiredSubprograms =
+      subprograms.length > 0 ? subprograms : selection ? [selection] : [];
     const totalSubprograms = requiredSubprograms.length;
-    const selectionName = selection?.name.trim() || `Categoría ${categoryMoodleId}`;
+    const selectionName =
+      selection?.name.trim() || `Categoría ${categoryMoodleId}`;
     const subprogramByCategory = new Map<number, number>();
     for (const subprogram of requiredSubprograms) {
       const id = Number(subprogram.moodleId);
-      for (const categoryId of [id, ...this.getChildCategoryIds(id, allCategories)]) {
+      for (const categoryId of [
+        id,
+        ...this.getChildCategoryIds(id, allCategories),
+      ]) {
         subprogramByCategory.set(categoryId, id);
       }
     }
@@ -1171,13 +1179,22 @@ export class ProjectionService {
     });
 
     if (courses.length === 0) {
-      return { courses: [], students: [], total: 0, page, limit, totalSubprograms, selectionName };
+      return {
+        courses: [],
+        students: [],
+        total: 0,
+        page,
+        limit,
+        totalSubprograms,
+        selectionName,
+      };
     }
 
     const subprogramByCourse = new Map<number, number>();
     for (const course of courses) {
       const subprogramId = subprogramByCategory.get(Number(course.categoryId));
-      if (subprogramId != null) subprogramByCourse.set(Number(course.moodleId), subprogramId);
+      if (subprogramId != null)
+        subprogramByCourse.set(Number(course.moodleId), subprogramId);
     }
 
     // Columnas ordenadas agrupadas por materia y luego por nombre
@@ -1248,7 +1265,9 @@ export class ProjectionService {
       )`;
       studentsQb.andWhere(
         totalSubprograms === 0
-          ? (completionStatus === ProgramCompletionStatus.COMPLETED ? 'FALSE' : 'TRUE')
+          ? completionStatus === ProgramCompletionStatus.COMPLETED
+            ? 'FALSE'
+            : 'TRUE'
           : `${approvedCount} ${completionStatus === ProgramCompletionStatus.COMPLETED ? '=' : '<'} :requiredSubprograms`,
         {
           passingGrade: PASSING_GRADE,
@@ -1309,7 +1328,8 @@ export class ProjectionService {
       const approvedSubprograms = new Set<number>();
       for (const [courseId, subprogramId] of subprogramByCourse) {
         const grade = grades[courseId];
-        if (grade !== null && grade >= PASSING_GRADE) approvedSubprograms.add(subprogramId);
+        if (grade !== null && grade >= PASSING_GRADE)
+          approvedSubprograms.add(subprogramId);
       }
       return {
         moodleId: uid,
@@ -1323,7 +1343,15 @@ export class ProjectionService {
       };
     });
 
-    return { courses: courseColumns, students, total, page, limit: paginate ? limit : total, totalSubprograms, selectionName };
+    return {
+      courses: courseColumns,
+      students,
+      total,
+      page,
+      limit: paginate ? limit : total,
+      totalSubprograms,
+      selectionName,
+    };
   }
 
   /**

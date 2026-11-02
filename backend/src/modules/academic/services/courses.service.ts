@@ -733,7 +733,9 @@ export class CoursesService {
     });
 
     if (!course) {
-      throw new NotFoundException(`Course with moodleId ${courseMoodleId} not found`);
+      throw new NotFoundException(
+        `Course with moodleId ${courseMoodleId} not found`,
+      );
     }
 
     // Check if already enrolled
@@ -745,7 +747,9 @@ export class CoursesService {
     });
 
     if (existingEnrolment && existingEnrolment.enrolStatus === 'active') {
-      throw new BadRequestException('El estudiante ya está inscrito en este curso');
+      throw new BadRequestException(
+        'El estudiante ya está inscrito en este curso',
+      );
     }
 
     // Enroll in Moodle (roleid 5 = student)
@@ -806,7 +810,9 @@ export class CoursesService {
     });
 
     if (!course) {
-      throw new NotFoundException(`Course with moodleId ${courseMoodleId} not found`);
+      throw new NotFoundException(
+        `Course with moodleId ${courseMoodleId} not found`,
+      );
     }
 
     // Find existing enrolment
@@ -819,7 +825,9 @@ export class CoursesService {
     });
 
     if (!existingEnrolment) {
-      throw new NotFoundException('El estudiante no está inscrito en este curso');
+      throw new NotFoundException(
+        'El estudiante no está inscrito en este curso',
+      );
     }
 
     // Unenroll from Moodle
@@ -865,7 +873,9 @@ export class CoursesService {
     });
 
     if (!course) {
-      throw new NotFoundException(`Course with moodleId ${courseMoodleId} not found`);
+      throw new NotFoundException(
+        `Course with moodleId ${courseMoodleId} not found`,
+      );
     }
 
     // Get already enrolled user IDs

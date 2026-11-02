@@ -40,8 +40,10 @@ export class UploadsService {
       if (existsSync(oldPath)) {
         try {
           unlinkSync(oldPath);
-        } catch (e) {
-          this.logger.warn(`Failed to delete old profile photo: ${oldPath}`);
+        } catch (error) {
+          this.logger.warn(
+            `Failed to delete old profile photo ${oldPath}: ${(error as Error).message}`,
+          );
         }
       }
     }
@@ -70,8 +72,10 @@ export class UploadsService {
       if (existsSync(oldPath)) {
         try {
           unlinkSync(oldPath);
-        } catch (e) {
-          this.logger.warn(`Failed to delete old document: ${oldPath}`);
+        } catch (error) {
+          this.logger.warn(
+            `Failed to delete old document ${oldPath}: ${(error as Error).message}`,
+          );
         }
       }
 
@@ -132,7 +136,9 @@ export class UploadsService {
     }
 
     if (document.userId !== userId) {
-      throw new ForbiddenException('No tienes permiso para eliminar este documento');
+      throw new ForbiddenException(
+        'No tienes permiso para eliminar este documento',
+      );
     }
 
     // Delete the file
@@ -140,8 +146,10 @@ export class UploadsService {
     if (existsSync(filePath)) {
       try {
         unlinkSync(filePath);
-      } catch (e) {
-        this.logger.warn(`Failed to delete document file: ${filePath}`);
+      } catch (error) {
+        this.logger.warn(
+          `Failed to delete document file ${filePath}: ${(error as Error).message}`,
+        );
       }
     }
 
@@ -177,8 +185,10 @@ export class UploadsService {
       if (existsSync(photoPath)) {
         try {
           unlinkSync(photoPath);
-        } catch (e) {
-          this.logger.warn(`Failed to delete profile photo: ${photoPath}`);
+        } catch (error) {
+          this.logger.warn(
+            `Failed to delete profile photo ${photoPath}: ${(error as Error).message}`,
+          );
         }
       }
       user.profilePhotoUrl = '';

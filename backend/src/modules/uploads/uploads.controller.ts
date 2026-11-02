@@ -11,7 +11,13 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { UploadsService } from './uploads.service';
 import { DocumentType } from './entities/user-document.entity';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -101,7 +107,10 @@ export class UploadsController {
       throw new BadRequestException('No se proporcionó ningún archivo');
     }
 
-    if (!documentType || !Object.values(DocumentType).includes(documentType as DocumentType)) {
+    if (
+      !documentType ||
+      !Object.values(DocumentType).includes(documentType as DocumentType)
+    ) {
       throw new BadRequestException(
         'Tipo de documento inválido. Debe ser: CEDULA, CERTIFICADO_BACHILLER o CARTA_PASTOR',
       );

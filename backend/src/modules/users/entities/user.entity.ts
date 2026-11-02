@@ -51,7 +51,12 @@ export class User {
   @Column({ type: 'varchar', length: 255, nullable: true })
   profession: string;
 
-  @Column({ type: 'varchar', length: 500, nullable: true, name: 'profile_photo_url' })
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+    name: 'profile_photo_url',
+  })
   profilePhotoUrl: string;
 
   @CreateDateColumn({ name: 'created_at' })
