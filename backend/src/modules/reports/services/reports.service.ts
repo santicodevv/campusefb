@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { LocalGrade } from '../../academic/entities/local-grade.entity';
@@ -29,6 +29,8 @@ import {
 
 @Injectable()
 export class ReportsService {
+  private readonly logger = new Logger(ReportsService.name);
+
   constructor(
     @InjectRepository(LocalGrade)
     private readonly gradeRepository: Repository<LocalGrade>,
@@ -659,7 +661,11 @@ export class ReportsService {
         .filter((s): s is NonNullable<typeof s> => s !== null);
     } catch (error) {
       // Log error and return empty array
-      console.error('Error fetching active students:', error);
+      const err = error as Error;
+      this.logger.error(
+        `Error fetching active students: ${err.message}`,
+        err.stack,
+      );
       return [];
     }
   }
