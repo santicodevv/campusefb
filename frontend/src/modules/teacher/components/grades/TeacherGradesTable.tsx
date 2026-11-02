@@ -10,9 +10,10 @@ interface TeacherGradesTableProps {
   handleGradeChange: (studentId: number, field: 'totalGrade' | 'comment', value: string) => void;
   handleSave: (studentId: number) => void;
   updateGradeMutation: { isPending: boolean };
+  isEditingEnabled: boolean;
 }
 
-export function TeacherGradesTable({ studentGrades, localEdits, handleGradeChange, handleSave, updateGradeMutation }: TeacherGradesTableProps) {
+export function TeacherGradesTable({ studentGrades, localEdits, handleGradeChange, handleSave, updateGradeMutation, isEditingEnabled }: TeacherGradesTableProps) {
   return (
     <Card>
       <CardContent className="p-0">
@@ -51,7 +52,8 @@ export function TeacherGradesTable({ studentGrades, localEdits, handleGradeChang
                   const displayTotal = localEdit !== undefined && localEdit.totalGrade !== undefined ? localEdit.totalGrade : student.totalGrade;
                   const displayComment = localEdit?.comment ?? student.comment ?? '';
                   const hasLocalEdit = localEdit !== undefined;
-                  const isLocked = student.totalGrade !== null && !hasLocalEdit;
+                  // Una nota ya registrada solo se puede corregir con la edición habilitada por el administrador
+                  const isLocked = student.totalGrade !== null && !hasLocalEdit && !isEditingEnabled;
 
                   return (
                     <tr key={student.studentId} className="hover:bg-gray-50">

@@ -6,6 +6,7 @@ import { TeacherGradesFilters } from '../components/grades/TeacherGradesFilters'
 import { TeacherGradesTable } from '../components/grades/TeacherGradesTable';
 import { TeacherGradesLegend } from '../components/grades/TeacherGradesLegend';
 import { TeacherGradesError } from '../components/grades/TeacherGradesError';
+import { TeacherCorrectionReasonModal } from '../components/grades/TeacherCorrectionReasonModal';
 
 export default function TeacherGrades() {
   const navigate = useNavigate();
@@ -36,6 +37,11 @@ export default function TeacherGrades() {
     updateGradeMutation,
     handleGradeChange,
     handleSave,
+    isEditingEnabled,
+    correctionStudent,
+    correctionGrade,
+    handleConfirmCorrection,
+    cancelCorrection,
   } = gradesHook;
 
   const courseName = studentGrades?.[0]?.courseName || 'Curso';
@@ -55,8 +61,16 @@ export default function TeacherGrades() {
         handleGradeChange={handleGradeChange}
         handleSave={handleSave}
         updateGradeMutation={updateGradeMutation}
+        isEditingEnabled={isEditingEnabled}
       />
       <TeacherGradesLegend />
+      <TeacherCorrectionReasonModal
+        student={correctionStudent}
+        newGrade={correctionGrade}
+        isPending={updateGradeMutation.isPending}
+        onConfirm={handleConfirmCorrection}
+        onCancel={cancelCorrection}
+      />
     </div>
   );
 }

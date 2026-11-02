@@ -29,7 +29,7 @@ export function TeacherEditSessionStatus({ editSessionStatus }: TeacherEditSessi
             </p>
             <p className="text-sm text-gray-500">
               {editSessionStatus?.isActive
-                ? 'Puede editar las calificaciones de sus estudiantes. Una vez editada una nota, no podrá modificarla hasta que el administrador habilite una nueva sesión.'
+                ? 'Puede corregir la nota final de sus estudiantes las veces que necesite, indicando el motivo. Las notas de Moodle solo se pueden editar una vez por sesión.'
                 : 'Contacte al administrador para habilitar la edición de notas.'}
             </p>
           </div>

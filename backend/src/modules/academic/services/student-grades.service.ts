@@ -2,11 +2,14 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Not, IsNull } from 'typeorm';
 import { CourseStudentGrade } from '../entities/course-student-grade.entity';
+import { CourseTeacher } from '../entities/course-teacher.entity';
+import { GradeEditSession } from '../entities/grade-edit-session.entity';
 import { PeriodAvailableCourse } from '../entities/period-available-course.entity';
 import { MoodleCourse } from '../../moodle-integration/entities/moodle-course.entity';
 import { MoodleEnrolment } from '../../moodle-integration/entities/moodle-enrolment.entity';
@@ -62,6 +65,10 @@ export class StudentGradesService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(PeriodAvailableCourse)
     private readonly periodCourseRepository: Repository<PeriodAvailableCourse>,
+    @InjectRepository(CourseTeacher)
+    private readonly courseTeacherRepository: Repository<CourseTeacher>,
+    @InjectRepository(GradeEditSession)
+    private readonly gradeEditSessionRepository: Repository<GradeEditSession>,
     private readonly auditService: AuditService,
   ) {}
 
@@ -201,8 +208,9 @@ export class StudentGradesService {
 
   /**
    * Update or create a student grade (for teacher)
-   * Teachers CANNOT re-edit once a totalGrade has been saved.
-   * Admins CAN always edit.
+   * Teachers can only grade courses they are assigned to. Once a totalGrade
+   * has been saved, they can correct it only while the admin's edit session
+   * is active, and must give a reason. Admins CAN always edit.
    */
   async updateGrade(
     courseMoodleId: number,
@@ -241,11 +249,31 @@ export class StudentGradesService {
       },
     });
 
-    // GRADE LOCKING: If grade already has a totalGrade and caller is NOT admin, block
-    if (!isAdmin && grade && grade.totalGrade !== null) {
-      throw new ForbiddenException(
-        'La calificación ya fue registrada y no puede ser modificada. Contacte al administrador.',
-      );
+    const reason = dto.reason?.trim() || null;
+
+    if (!isAdmin) {
+      if (!(await this.isTeacherOfCourse(teacherId, courseMoodleId))) {
+        throw new ForbiddenException(
+          'No está asignado como profesor de este curso.',
+        );
+      }
+
+      // GRADE LOCKING: a saved totalGrade can only be corrected during an active edit session
+      if (grade && grade.totalGrade !== null) {
+        const activeSession = await this.gradeEditSessionRepository.findOne({
+          where: { isActive: true },
+        });
+        if (!activeSession) {
+          throw new ForbiddenException(
+            'La calificación ya fue registrada y no puede ser modificada. Contacte al administrador.',
+          );
+        }
+        if (!reason) {
+          throw new BadRequestException(
+            'Debe indicar el motivo de la corrección.',
+          );
+        }
+      }
     }
 
     const isNew = !grade;
@@ -280,11 +308,39 @@ export class StudentGradesService {
       entity: 'course_student_grades',
       entityKey: `${courseMoodleId}:${studentId}:${periodId}`,
       beforeData,
-      afterData: saved,
+      afterData: reason ? { ...saved, reason } : saved,
       source: 'app',
     });
 
     return saved;
+  }
+
+  /**
+   * A teacher is assigned to a course if Moodle enrols them as teacher or
+   * there is a manual assignment in course_teachers (same rule as GradesService.getCourses).
+   */
+  private async isTeacherOfCourse(
+    teacherId: number,
+    courseMoodleId: number,
+  ): Promise<boolean> {
+    const assignment = await this.courseTeacherRepository.findOne({
+      where: { teacherId, courseMoodleId },
+    });
+    if (assignment) return true;
+
+    const teacher = await this.userRepository.findOne({
+      where: { id: teacherId },
+    });
+    if (!teacher?.moodleUserId) return false;
+
+    const enrolment = await this.enrolmentRepository.findOne({
+      where: {
+        userMoodleId: teacher.moodleUserId,
+        courseMoodleId,
+        roleCode: In(['editingteacher', 'teacher']),
+      },
+    });
+    return !!enrolment;
   }
 
   /**
